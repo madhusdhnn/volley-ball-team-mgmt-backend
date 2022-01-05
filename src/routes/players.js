@@ -11,13 +11,26 @@ const toPlayer = (player) => {
     return _player;
   }
 
-  const {age, height, weight, power, speed, favourite_positions} = player;
+  const {
+    player_id,
+    team_id,
+    team_name,
+    name,
+    age,
+    height,
+    weight,
+    power,
+    speed,
+    favourite_positions,
+    created_at,
+    updated_at
+  } = player;
 
-  _player.playerId = player["player_id"];
-  _player.teamId = player["team_id"];
-  _player.name = player.name;
-  _player.additionalInfo = {age, height, weight, power, speed, favourite_positions};
-  _player.audit = {createdAt: player["created_at"], updatedAt: player["updated_at"]}
+  _player.playerId = player_id;
+  _player.name = name;
+  _player.team = {teamId: team_id, teamName: team_name};
+  _player.additionalInfo = {age, height, weight, power, speed, favouritePositions: favourite_positions};
+  _player.audit = {createdAt: created_at, updatedAt: updated_at}
   return _player;
 };
 

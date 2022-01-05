@@ -42,7 +42,23 @@ class PlayerService {
 
   async getPlayer(playerId) {
     try {
-      const res = await volleyBallDb.query("SELECT * FROM players WHERE player_id = $1", [playerId]);
+      const query = `SELECT t.name AS team_name,
+                            p.player_id,
+                            p.team_id,
+                            p.name,
+                            p.age,
+                            p.height,
+                            p.weight,
+                            p.power,
+                            p.speed,
+                            p.favourite_positions,
+                            p.created_at,
+                            p.updated_at
+                     FROM players p
+                              JOIN teams t ON t.team_id = p.team_id
+                     WHERE p.player_id = $1`;
+
+      const res = await volleyBallDb.query(query, [playerId]);
       return singleRowExtractor.extract(res);
     } catch (e) {
       throw e;
@@ -51,7 +67,23 @@ class PlayerService {
 
   async getAllPlayers() {
     try {
-      const res = await volleyBallDb.query("SELECT * FROM players");
+      const query = `SELECT t.name AS team_name,
+                            p.player_id,
+                            p.team_id,
+                            p.name,
+                            p.age,
+                            p.height,
+                            p.weight,
+                            p.power,
+                            p.speed,
+                            p.favourite_positions,
+                            p.created_at,
+                            p.updated_at
+                     FROM players p
+                              JOIN teams t ON t.team_id = p.team_id
+                     ORDER BY p.player_id`;
+
+      const res = await volleyBallDb.query(query);
       return multipleRowsExtractor.extract(res);
     } catch (e) {
       throw e;
@@ -60,7 +92,22 @@ class PlayerService {
 
   async getAllPlayersInTeam(teamId) {
     try {
-      const res = await volleyBallDb.query("SELECT * FROM players where team_id = $1", [teamId]);
+      const query = `SELECT t.name AS team_name,
+                            p.player_id,
+                            p.team_id,
+                            p.name,
+                            p.age,
+                            p.height,
+                            p.weight,
+                            p.power,
+                            p.speed,
+                            p.favourite_positions,
+                            p.created_at,
+                            p.updated_at
+                     FROM players p
+                              JOIN teams t ON t.team_id = p.team_id
+                     where t.team_id = $1`;
+      const res = await volleyBallDb.query(query, [teamId]);
       return multipleRowsExtractor.extract(res);
     } catch (e) {
       throw e;
@@ -71,9 +118,7 @@ class PlayerService {
     try {
       const rs1 = await volleyBallDb.query("INSERT INTO players (name, created_at, updated_at) VALUES ($1, now(), now()) RETURNING (player_id)", [player.name]);
       const playerId = singleRowExtractor.extract(rs1);
-
-      const rs2 = await volleyBallDb.query("SELECT * FROM players WHERE player_id = $1", [playerId]);
-      return singleRowExtractor.extract(rs2);
+      return await this.getPlayer(playerId);
     } catch (e) {
       throw e;
     }
@@ -104,10 +149,10 @@ class PlayerService {
       const updateQuery = `UPDATE players
                            SET ${fieldsToUpdate.fields},
                                updated_at = now()
-                           WHERE player_id = $${Object.keys(fields).length + 1}`;
+                           WHERE player_id = $${fieldsToUpdate.values + 1}`;
 
       await volleyBallDb.query(updateQuery, [...fieldsToUpdate.values, player.playerId]);
-      return this.getPlayer(player.playerId);
+      return await this.getPlayer(player.playerId);
     } catch (e) {
       throw e;
     }
@@ -124,7 +169,7 @@ class PlayerService {
   async assignToTeam(playerId, teamId) {
     try {
       await volleyBallDb.query("UPDATE players SET team_id = $1 WHERE player_id = $2", [teamId, playerId]);
-      return this.getPlayer(playerId);
+      return await this.getPlayer(playerId);
     } catch (e) {
       throw e;
     }
@@ -140,7 +185,7 @@ class PlayerService {
       }
 
       await volleyBallDb.query("UPDATE players SET team_id = $3 WHERE player_id = $1 AND team_id = $2", [playerId, currentTeamId, newTeamId]);
-      return this.getPlayer(playerId);
+      return await this.getPlayer(playerId);
     } catch (e) {
       throw e;
     }

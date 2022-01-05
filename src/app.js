@@ -11,6 +11,17 @@ const createApp = () => {
   app.get("/health", (req, res) => res.send("Server is running.."))
   app.use(TeamRouter);
   app.use(PlayerRouter);
+  app.use((req, res) => {
+    res.status(404);
+
+
+    if (req.accepts('json')) {
+      res.json({error: "Requested resource not found."});
+      return;
+    }
+
+    res.type('txt').send("Resource not found");
+  })
   return app;
 };
 
