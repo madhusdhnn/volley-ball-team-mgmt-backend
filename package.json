@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "nodemon --exec babel-node src/app.js",
     "build": "babel src/ -d dist",
-    "start": "npm run build && node dist/app.js"
+    "clean": "rm -rf dist",
+    "start": "npm run clean && npm run build && node dist/app.js"
   },
   "keywords": [
     "volley",
@@ -16,8 +17,10 @@
   "license": "ISC",
   "dependencies": {
     "@babel/runtime": "^7.16.7",
+    "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "express": "^4.17.2",
+    "jsonwebtoken": "^8.5.1",
     "pg": "^8.7.1"
   },
   "devDependencies": {

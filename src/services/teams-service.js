@@ -14,7 +14,7 @@ class TeamsService {
   async getTeam(teamId) {
     try {
       const res = await volleyBallDb.query("SELECT * FROM teams WHERE team_id = $1", [teamId]);
-      return res.rows[0];
+      return singleRowExtractor.extract(res);
     } catch (e) {
       throw e;
     }

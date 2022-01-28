@@ -1,8 +1,7 @@
 import volleyBallDb from "../config/db";
-import {multipleRowsExtractor, singleRowExtractor} from "../utils/db-utils";
+import { multipleRowsExtractor, singleRowExtractor } from "../utils/db-utils";
 
 class PlayerService {
-
   getFieldsToUpdate = (player) => {
     const fields = {};
 
@@ -40,12 +39,39 @@ class PlayerService {
     return Object.freeze(fields);
   };
 
+  async getCurrentPlayer(username) {
+    try {
+      const query = `SELECT t.name AS team_name,
+                            p.player_id,
+                            p.username,
+                            p.team_id,
+                            p.name,
+                            p.shirt_no,
+                            p.age,
+                            p.height,
+                            p.weight,
+                            p.power,
+                            p.speed,
+                            p.favourite_positions,
+                            p.created_at,
+                            p.updated_at
+                     FROM players p
+                              JOIN teams t ON t.team_id = p.team_id
+                     WHERE p.username = $1`;
+
+      const res = await volleyBallDb.query(query, [username]);
+      return singleRowExtractor.extract(res);
+    } catch (e) {
+      throw e;
+    }
+  }
   async getPlayer(playerId) {
     try {
       const query = `SELECT t.name AS team_name,
                             p.player_id,
                             p.team_id,
                             p.name,
+                            p.shirt_no,
                             p.age,
                             p.height,
                             p.weight,
@@ -67,9 +93,10 @@ class PlayerService {
 
   async getAllPlayers() {
     try {
-      const query = `SELECT t.name AS team_name,
+      const query = `SELECT t.name    AS team_name,
+                            p.team_id AS team_id,
                             p.player_id,
-                            p.team_id,
+                            p.shirt_no,
                             p.name,
                             p.age,
                             p.height,
@@ -80,7 +107,7 @@ class PlayerService {
                             p.created_at,
                             p.updated_at
                      FROM players p
-                              JOIN teams t ON t.team_id = p.team_id
+                              LEFT JOIN teams t ON t.team_id = p.team_id
                      ORDER BY p.player_id`;
 
       const res = await volleyBallDb.query(query);
@@ -116,7 +143,10 @@ class PlayerService {
 
   async createPlayer(player) {
     try {
-      const rs1 = await volleyBallDb.query("INSERT INTO players (name, created_at, updated_at) VALUES ($1, now(), now()) RETURNING (player_id)", [player.name]);
+      const rs1 = await volleyBallDb.query(
+        "INSERT INTO players (name, shirt_no, created_at, updated_at) VALUES ($1, $2, now(), now()) RETURNING (player_id)",
+        [player.name, player.shirtNo]
+      );
       const playerId = singleRowExtractor.extract(rs1);
       return await this.getPlayer(playerId);
     } catch (e) {
@@ -140,18 +170,21 @@ class PlayerService {
 
       const updateFields = Object.keys(fields).map((k, i) => ({
         field: `${k}=$${i + 1}`,
-        value: fields[k]
+        value: fields[k],
       }));
 
-      fieldsToUpdate.fields = updateFields.map(uf => uf.field).join(",");
-      fieldsToUpdate.values = updateFields.map(uf => uf.value);
+      fieldsToUpdate.fields = updateFields.map((uf) => uf.field).join(",");
+      fieldsToUpdate.values = updateFields.map((uf) => uf.value);
 
       const updateQuery = `UPDATE players
                            SET ${fieldsToUpdate.fields},
                                updated_at = now()
-                           WHERE player_id = $${fieldsToUpdate.values + 1}`;
+                           WHERE player_id = $${fieldsToUpdate.values.length + 1}`;
 
-      await volleyBallDb.query(updateQuery, [...fieldsToUpdate.values, player.playerId]);
+      await volleyBallDb.query(updateQuery, [
+        ...fieldsToUpdate.values,
+        player.playerId,
+      ]);
       return await this.getPlayer(player.playerId);
     } catch (e) {
       throw e;
@@ -160,7 +193,9 @@ class PlayerService {
 
   async deletePlayer(playerId) {
     try {
-      await volleyBallDb.query("DELETE FROM players WHERE player_id = $1", [playerId]);
+      await volleyBallDb.query("DELETE FROM players WHERE player_id = $1", [
+        playerId,
+      ]);
     } catch (e) {
       throw e;
     }
@@ -168,7 +203,10 @@ class PlayerService {
 
   async assignToTeam(playerId, teamId) {
     try {
-      await volleyBallDb.query("UPDATE players SET team_id = $1 WHERE player_id = $2", [teamId, playerId]);
+      await volleyBallDb.query(
+        "UPDATE players SET team_id = $1 WHERE player_id = $2",
+        [teamId, playerId]
+      );
       return await this.getPlayer(playerId);
     } catch (e) {
       throw e;
@@ -177,14 +215,21 @@ class PlayerService {
 
   async transferToTeam(currentTeamId, newTeamId, playerId) {
     try {
-      const res = await volleyBallDb.query("SELECT count(*) as total_players_in_team FROM players WHERE team_id = $1", [currentTeamId]);
-      const totalPlayers = singleRowExtractor.extract(res)["total_players_in_team"];
+      const res = await volleyBallDb.query(
+        "SELECT count(*) as total_players_in_team FROM players WHERE team_id = $1",
+        [currentTeamId]
+      );
+      const totalPlayers =
+        singleRowExtractor.extract(res)["total_players_in_team"];
 
       if (totalPlayers > 6) {
-        return {error: "Team can contain only 6 players at a time"};
+        return { error: "Team can contain only 6 players at a time" };
       }
 
-      await volleyBallDb.query("UPDATE players SET team_id = $3 WHERE player_id = $1 AND team_id = $2", [playerId, currentTeamId, newTeamId]);
+      await volleyBallDb.query(
+        "UPDATE players SET team_id = $3 WHERE player_id = $1 AND team_id = $2",
+        [playerId, currentTeamId, newTeamId]
+      );
       return await this.getPlayer(playerId);
     } catch (e) {
       throw e;
