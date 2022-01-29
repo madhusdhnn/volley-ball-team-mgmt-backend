@@ -13,20 +13,14 @@ const getCurrentPlayer = async (user) => {
 };
 
 const authorize = async (jwtToken, roleNames = []) => {
-  const decoded = await authorizationService.verifyToken(jwtToken);
-  if (!decoded) {
-    return {
-      status: "failed",
-      code: "AUTH_ERR_401",
-      message: "Auth token is invalid",
-    };
+  const authorization = await authorizationService.verifyToken(jwtToken);
+  if (authorization.status === "failed") {
+    return { ...authorization };
   }
 
-  if (decoded.code && decoded.code === "AUTH_EXP_401") {
-    return { ...decoded };
-  }
+  const { data } = authorization;
 
-  if (!roleNames.includes(decoded.user.roleName)) {
+  if (!roleNames.includes(data.user.roleName)) {
     return {
       status: "failed",
       code: "AUTH_ROLE_401",
@@ -36,12 +30,12 @@ const authorize = async (jwtToken, roleNames = []) => {
 
   return {
     status: "success",
-    user: decoded.user,
+    user: data.user,
     authentication: jwtToken,
   };
 };
 
-const adminAuthorize = async (req, res, next) => {
+const authorizeUser = async (req, res, next, roleNames = []) => {
   try {
     const authHeader = req.headers["authorization"];
     const jwtToken = authHeader && authHeader.split(" ")[1];
@@ -52,13 +46,13 @@ const adminAuthorize = async (req, res, next) => {
         error: "Auth token not found in header",
       });
     } else {
-      const auth = await authorize(jwtToken, "ADMIN");
-      if (auth.status && auth.status === "failed") {
-        res.status(401).json(auth);
+      const authorization = await authorize(jwtToken, roleNames);
+      if (authorization.status === "failed") {
+        res.status(401).json(authorization);
       } else {
-        req.user = auth.user;
-        req.authentication = auth.authentication;
-        req.isAdmin = auth.user.roleName === "ADMIN";
+        req.user = authorization.user;
+        req.authentication = authorization.authentication;
+        req.isAdmin = authorization.user.roleName === "ADMIN";
         next();
       }
     }
@@ -67,55 +61,12 @@ const adminAuthorize = async (req, res, next) => {
   }
 };
 
-const playerAuthorize = async (req, res, next) => {
-  try {
-    const authHeader = req.headers["authorization"];
-    const jwtToken = authHeader && authHeader.split(" ")[1];
-    if (!jwtToken) {
-      res.status(401).json({
-        status: "failed",
-        code: "AUTH_401",
-        error: "Auth token not found in header",
-      });
-    } else {
-      const auth = await authorize(jwtToken, "PLAYER");
-      if (auth.status && auth.status === "failed") {
-        res.status(401).json(auth);
-      } else {
-        req.user = auth.user;
-        req.authentication = auth.authentication;
-        next();
-      }
-    }
-  } catch (e) {
-    res.status(500).json({ error: e.message || "Something went wrong" });
-  }
+const adminAuthorize = async (req, res, next) => {
+  await authorizeUser(req, res, next, ["ADMIN"]);
 };
 
 const commonAuthorize = async (req, res, next) => {
-  try {
-    const authHeader = req.headers["authorization"];
-    const jwtToken = authHeader && authHeader.split(" ")[1];
-    if (!jwtToken) {
-      res.status(401).json({
-        status: "failed",
-        code: "AUTH_401",
-        error: "Auth token not found in header",
-      });
-    } else {
-      const auth = await authorize(jwtToken, ["ADMIN", "PLAYER"]);
-      if (auth.status && auth.status === "failed") {
-        res.status(401).json(auth);
-      } else {
-        req.user = auth.user;
-        req.authentication = auth.authentication;
-        req.isAdmin = auth.user.roleName === "ADMIN";
-        next();
-      }
-    }
-  } catch (e) {
-    res.status(500).json({ error: e.message || "Something went wrong" });
-  }
+  await authorizeUser(req, res, next, ["ADMIN", "PLAYER"]);
 };
 
 const sameTeamAuthorize = async (req, res, next) => {
@@ -130,10 +81,10 @@ const sameTeamAuthorize = async (req, res, next) => {
         message: "Team Id not found in the request",
       });
     } else {
-      const team = toTeam(await teamService.getTeam(teamId));
+      const teamInRequest = toTeam(await teamService.getTeam(teamId));
       const currentPlayer = await getCurrentPlayer(user);
 
-      if (req.isAdmin || currentPlayer.team.id === team.teamId) {
+      if (req.isAdmin || currentPlayer.team.id === teamInRequest.teamId) {
         req.player = currentPlayer;
         next();
       } else {
@@ -159,9 +110,9 @@ const samePlayerAuthorize = async (req, res, next) => {
     const playerId = req.params["playerId"] || req.body["playerId"];
 
     const currentPlayer = await getCurrentPlayer(user);
-    const player = toPlayer(await playerService.getPlayer(playerId));
+    const playerInRequest = toPlayer(await playerService.getPlayer(playerId));
 
-    if (currentPlayer.playerId === player.playerId) {
+    if (req.isAdmin || currentPlayer.playerId === playerInRequest.playerId) {
       req.player = currentPlayer;
       next();
     } else {
@@ -186,9 +137,9 @@ const currentPlayerTeamAuthorize = async (req, res, next) => {
     const playerId = req.params["playerId"];
 
     const currentPlayer = await getCurrentPlayer(user);
-    const player = toPlayer(await playerService.getPlayer(playerId));
+    const playerInRequest = toPlayer(await playerService.getPlayer(playerId));
 
-    if (req.isAdmin || currentPlayer.team.id === player.team.id) {
+    if (req.isAdmin || currentPlayer.team.id === playerInRequest.team.id) {
       req.player = currentPlayer;
       next();
     } else {
@@ -209,7 +160,6 @@ const currentPlayerTeamAuthorize = async (req, res, next) => {
 
 export {
   adminAuthorize,
-  playerAuthorize,
   commonAuthorize,
   sameTeamAuthorize,
   samePlayerAuthorize,

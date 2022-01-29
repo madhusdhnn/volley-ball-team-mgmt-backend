@@ -1,9 +1,10 @@
 import { Router } from "express";
 import TeamService from "../services/teams-service";
 import { toTeam } from "../utils/response-utils";
+import { adminAuthorize, sameTeamAuthorize } from "../routes/authorization";
 
 const teamService = new TeamService();
-const router = Router();
+const teamRouter = Router();
 
 const getAllTeams = async (req, res) => {
   try {
@@ -24,12 +25,10 @@ const createTeam = async (req, res) => {
     res.status(201).json({ status: "success", data: toTeam(team) });
   } catch (e) {
     console.error(e);
-    res
-      .status(500)
-      .json({
-        status: "failed",
-        error: `Error creating team. Reason: ${e.detail}`,
-      });
+    res.status(500).json({
+      status: "failed",
+      error: `Error creating team. Reason: ${e.detail}`,
+    });
   }
 };
 
@@ -66,10 +65,15 @@ const deleteTeam = async (req, res) => {
   }
 };
 
-router.get("/vbms/api/v1/teams/all", getAllTeams);
-router.get("/vbms/api/v1/teams/:teamId", getTeam);
-router.post("/vbms/api/v1/teams", createTeam);
-router.put("/vbms/api/v1/teams", updateTeam);
-router.delete("/vbms/api/v1/teams/:teamId", deleteTeam);
+teamRouter.get(
+  "/vbms/api/v1/teams/:teamId",
+  adminAuthorize,
+  sameTeamAuthorize,
+  getTeam
+);
+teamRouter.get("/vbms/api/v1/teams/all", adminAuthorize, getAllTeams);
+teamRouter.post("/vbms/api/v1/teams", adminAuthorize, createTeam);
+teamRouter.put("/vbms/api/v1/teams", adminAuthorize, updateTeam);
+teamRouter.delete("/vbms/api/v1/teams/:teamId", adminAuthorize, deleteTeam);
 
-export default router;
+export default teamRouter;

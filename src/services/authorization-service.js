@@ -12,7 +12,11 @@ class AuthorizationService {
   async verifyToken(jwtToken) {
     try {
       if (!jwtToken) {
-        return null;
+        return {
+          status: "failed",
+          code: "AUTH_ERR_401",
+          message: "Auth token is invalid",
+        };
       }
 
       const res = await volleyBallDb.query(
@@ -22,10 +26,17 @@ class AuthorizationService {
       const userToken = singleRowExtractor.extract(res);
 
       if (!userToken) {
-        return null;
+        return {
+          status: "failed",
+          code: "AUTH_ERR_401",
+          message: "Auth token is invalid",
+        };
       }
 
-      return jwt.verify(jwtToken, userToken["secret_key"]);
+      return {
+        status: "success",
+        data: jwt.verify(jwtToken, userToken["secret_key"]),
+      };
     } catch (e) {
       if (e.name && e.name === "TokenExpiredError") {
         await this.deleteInActiveToken(jwtToken);

@@ -1,20 +1,16 @@
 import { Router } from "express";
 import PlayerService from "../services/player-service";
-import TeamsService from "../services/teams-service";
-import { toError } from "../utils/response-utils";
+import { toError, toPlayer } from "../utils/response-utils";
 import {
   adminAuthorize,
-  playerAuthorize,
-  sameTeamAuthorize,
   commonAuthorize,
-  samePlayerAuthorize,
   currentPlayerTeamAuthorize,
+  samePlayerAuthorize,
+  sameTeamAuthorize,
 } from "./authorization";
 
-import { toPlayer } from "../utils/response-utils";
-
 const playerService = new PlayerService();
-const router = Router();
+const playerRouter = Router();
 
 const fetchPlayerUnitsMetadata = async (req, res) => {
   try {
@@ -93,12 +89,22 @@ const assignToTeam = async (req, res) => {
   try {
     const { playerId, teamId } = req.body;
     const player = await playerService.assignToTeam(playerId, teamId);
-    res.json({ status: "success", data: toPlayer(player) });
+    if (!player) {
+      res
+        .status(400)
+        .json({ status: "failed", error: "Player does not exists" });
+    } else if (player.error) {
+      res.status(400).json({ status: "failed", error: player.error });
+    } else {
+      res.json({ status: "success", data: toPlayer(player) });
+    }
   } catch (e) {
     console.error(e);
     res.status(500).json({
       status: "failed",
-      error: `Unable to assign to team. Reason: ${e.detail}`,
+      error: `Unable to assign to team. Reason: ${
+        e.detail || e.message || "Something went wrong"
+      }`,
     });
   }
 };
@@ -125,32 +131,41 @@ const transferToTeam = async (req, res) => {
   }
 };
 
-router.get(
+playerRouter.get(
   "/vbms/api/v1/players/metadata",
   commonAuthorize,
   fetchPlayerUnitsMetadata
 );
-router.get(
+playerRouter.get(
   "/vbms/api/v1/teams/:teamId/players",
   commonAuthorize,
   sameTeamAuthorize,
   getAllPlayersInTeam
 );
-router.get(
+playerRouter.get(
   "/vbms/api/v1/teams/:teamId/players/:playerId",
   commonAuthorize,
+  currentPlayerTeamAuthorize,
   getPlayer
 );
-router.put(
+playerRouter.put(
   "/vbms/api/v1/players",
   commonAuthorize,
   samePlayerAuthorize,
   updatePlayer
 );
-router.get("/vbms/api/v1/players", adminAuthorize, getAllPlayers);
-router.post("/vbms/api/v1/players", adminAuthorize, createPlayer);
-router.delete("/vbms/api/v1/players/:playerId", adminAuthorize, deletePlayer);
-router.put("/vbms/api/v1/players/assign", adminAuthorize, assignToTeam);
-router.put("/vbms/api/v1/players/transfer", adminAuthorize, transferToTeam);
+playerRouter.get("/vbms/api/v1/players", adminAuthorize, getAllPlayers);
+playerRouter.post("/vbms/api/v1/players", adminAuthorize, createPlayer);
+playerRouter.put("/vbms/api/v1/players/assign", adminAuthorize, assignToTeam);
+playerRouter.put(
+  "/vbms/api/v1/players/transfer",
+  adminAuthorize,
+  transferToTeam
+);
+playerRouter.delete(
+  "/vbms/api/v1/players/:playerId",
+  adminAuthorize,
+  deletePlayer
+);
 
-export default router;
+export default playerRouter;

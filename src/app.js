@@ -8,23 +8,24 @@ const createApp = (...routes) => {
   const app = express();
   app.use(cors());
   app.use(express.json());
-  app.use(express.urlencoded({extended: true}))
-  app.get("/health", (req, res) => res.json({
+  app.use(express.urlencoded({ extended: true }));
+  app.get("/health", (req, res) =>
+    res.json({
       status: "success",
-      message: "Server is running.."
-    }
-  ))
-  routes.forEach(route => app.use(route));
+      message: "Server is running..",
+    })
+  );
+  routes.forEach((route) => app.use(route));
   app.use((req, res) => {
     res.status(404);
 
-    if (req.accepts('json')) {
-      res.json({error: "Requested resource not found."});
+    if (req.accepts("json")) {
+      res.json({ error: "Requested resource not found." });
       return;
     }
 
-    res.type('txt').send("Resource not found");
-  })
+    res.type("txt").send("Resource not found");
+  });
   return app;
 };
 
@@ -35,5 +36,11 @@ const app = createApp([TeamRouter, PlayerRouter]);
 
 const authApp = createApp(AuthenticationRouter);
 
-app.listen(port, () => console.log(`Server is up and running on http://localhost:${port}`))
-authApp.listen(authPort, () => console.log(`Authentication Server is up and running on http://localhost:${authPort}`))
+app.listen(port, () =>
+  console.log(`Server is up and running on http://localhost:${port}`)
+);
+authApp.listen(authPort, () =>
+  console.log(
+    `Authentication Server is up and running on http://localhost:${authPort}`
+  )
+);

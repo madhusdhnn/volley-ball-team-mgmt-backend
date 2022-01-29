@@ -39,6 +39,14 @@ class PlayerService {
     return Object.freeze(fields);
   };
 
+  async getTotalPlayersInTeam(currentTeamId) {
+    const res = await volleyBallDb.query(
+      "SELECT count(*) as total_players_in_team FROM players WHERE team_id = $1",
+      [currentTeamId]
+    );
+    return singleRowExtractor.extract(res)["total_players_in_team"];
+  }
+
   async getCurrentPlayer(username) {
     try {
       const query = `SELECT t.name AS team_name,
@@ -179,7 +187,9 @@ class PlayerService {
       const updateQuery = `UPDATE players
                            SET ${fieldsToUpdate.fields},
                                updated_at = now()
-                           WHERE player_id = $${fieldsToUpdate.values.length + 1}`;
+                           WHERE player_id = $${
+                             fieldsToUpdate.values.length + 1
+                           }`;
 
       await volleyBallDb.query(updateQuery, [
         ...fieldsToUpdate.values,
@@ -203,6 +213,10 @@ class PlayerService {
 
   async assignToTeam(playerId, teamId) {
     try {
+      const totalPlayers = await this.getTotalPlayersInTeam(teamId);
+      if (totalPlayers > 6) {
+        return { error: "Team can contain only 6 players at a time" };
+      }
       await volleyBallDb.query(
         "UPDATE players SET team_id = $1 WHERE player_id = $2",
         [teamId, playerId]
@@ -215,13 +229,7 @@ class PlayerService {
 
   async transferToTeam(currentTeamId, newTeamId, playerId) {
     try {
-      const res = await volleyBallDb.query(
-        "SELECT count(*) as total_players_in_team FROM players WHERE team_id = $1",
-        [currentTeamId]
-      );
-      const totalPlayers =
-        singleRowExtractor.extract(res)["total_players_in_team"];
-
+      const totalPlayers = await getTotalPlayersInTeam(currentTeamId);
       if (totalPlayers > 6) {
         return { error: "Team can contain only 6 players at a time" };
       }
