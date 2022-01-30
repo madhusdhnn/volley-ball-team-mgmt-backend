@@ -1,10 +1,5 @@
-import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { IllegalArgumentError } from "./errors";
-
-const generateSecretKey = (rawString) => {
-  return crypto.createHash("sha256").update(rawString).digest("hex");
-};
 
 const BCRYPT_PATTERN = new RegExp(/\$2([ayb])?\$(\d\d)\$[.\/0-9A-Za-z]{53}/);
 

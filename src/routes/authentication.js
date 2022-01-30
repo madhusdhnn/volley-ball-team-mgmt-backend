@@ -1,7 +1,7 @@
 import { Router } from "express";
 import AuthenticationService from "../services/authentication-service";
 import { toError } from "../utils/response-utils";
-import { adminAuthorize, authorize } from "./authorization";
+import { commonAuthorize } from "./authorization";
 
 const authenticationService = new AuthenticationService();
 const router = Router();
@@ -39,6 +39,6 @@ const signout = async (req, res) => {
 };
 
 router.post("/vbms/auth/signin", signin);
-router.post("/vbms/auth/signout", adminAuthorize, signout);
+router.post("/vbms/auth/signout", commonAuthorize, signout);
 
 export default router;

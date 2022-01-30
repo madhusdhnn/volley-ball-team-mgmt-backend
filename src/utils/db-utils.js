@@ -5,7 +5,7 @@ class SingleRowExtractor {
     }
 
     if (resultSet.rows.length > 1) {
-      throw new Error('Expected single row in resultset');
+      throw new Error("Expected single row in resultset");
     }
 
     return resultSet.rows[0];
@@ -24,4 +24,4 @@ class MultipleRowsExtractor {
 const singleRowExtractor = new SingleRowExtractor();
 const multipleRowsExtractor = new MultipleRowsExtractor();
 
-export {singleRowExtractor, multipleRowsExtractor};
+export { singleRowExtractor, multipleRowsExtractor };
