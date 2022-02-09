@@ -5,9 +5,9 @@
   "main": "app.js",
   "scripts": {
     "dev": "nodemon --exec babel-node src/app.js",
-    "build": "babel src/ -d dist",
     "clean": "rm -rf dist",
-    "start": "npm run clean && npm run build && node dist/app.js"
+    "build": "npm run clean && babel src/ -d dist",
+    "start": "node dist/app.js"
   },
   "keywords": [
     "volley",
