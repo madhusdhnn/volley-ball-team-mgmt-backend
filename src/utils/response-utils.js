@@ -38,6 +38,7 @@ const toPlayer = (player) => {
 
   _player.playerId = player_id;
   _player.name = name;
+  _player.photoUrl = null;
   _player.shirtNo = shirt_no;
   _player.team = { id: team_id, name: team_name };
   _player.additionalInfo = {

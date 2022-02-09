@@ -1,6 +1,7 @@
 import AuthorizationService from "../services/authorization-service";
 import PlayerService from "../services/player-service";
 import TeamsService from "../services/teams-service";
+import { singleRowExtractor } from "../utils/db-utils";
 import { toPlayer, toTeam } from "../utils/response-utils";
 
 const authorizationService = new AuthorizationService();
@@ -157,6 +158,26 @@ const currentPlayerTeamAuthorize = async (req, res, next) => {
     });
   }
 };
+const refreshTokenAuthorize = async (req, res, next) => {
+  try {
+    const { refreshToken } = req.body;
+    const authorization = await authorizationService.verifyRefreshToken(
+      refreshToken
+    );
+    if (authorization.status === "failed") {
+      res.status(401).json(authorization);
+    } else {
+      req.username = authorization.data;
+      next();
+    }
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({
+      status: "failed",
+      error: "Something went wrong",
+    });
+  }
+};
 
 export {
   adminAuthorize,
@@ -164,4 +185,5 @@ export {
   sameTeamAuthorize,
   samePlayerAuthorize,
   currentPlayerTeamAuthorize,
+  refreshTokenAuthorize,
 };

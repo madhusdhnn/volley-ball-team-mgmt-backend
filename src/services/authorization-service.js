@@ -1,12 +1,13 @@
 import jwt from "jsonwebtoken";
 import volleyBallDb from "../config/db";
 import { singleRowExtractor } from "../utils/db-utils";
-
+import crypto from "crypto";
 class AuthorizationService {
-  async deleteInActiveToken(jwtToken) {
-    await volleyBallDb.query(`DELETE FROM user_tokens WHERE token = $1`, [
-      jwtToken,
-    ]);
+  async deleteInActiveToken(refreshToken) {
+    await volleyBallDb.query(
+      `DELETE FROM user_tokens WHERE refresh_token = $1`,
+      [refreshToken]
+    );
   }
 
   async verifyToken(jwtToken) {
@@ -29,7 +30,7 @@ class AuthorizationService {
         return {
           status: "failed",
           code: "AUTH_ERR_401",
-          message: "Auth token is invalid",
+          message: "Invalid Auth token",
         };
       }
 
@@ -39,8 +40,64 @@ class AuthorizationService {
       };
     } catch (e) {
       if (e.name && e.name === "TokenExpiredError") {
-        await this.deleteInActiveToken(jwtToken);
         return { status: "failed", code: "AUTH_EXP_401", message: e.message };
+      }
+      throw e;
+    }
+  }
+
+  async verifyRefreshToken(refreshToken) {
+    try {
+      if (!refreshToken) {
+        return {
+          status: "failed",
+          code: "AUTH_REFRESH_ERR_401",
+          message: "Refresh token not found in the request",
+        };
+      }
+
+      const res = await volleyBallDb.query(
+        `SELECT * from user_tokens WHERE refresh_token = $1`,
+        [refreshToken]
+      );
+
+      const userToken = singleRowExtractor.extract(res);
+      if (!userToken) {
+        return {
+          status: "failed",
+          code: "AUTH_REFRESH_ERR_401",
+          message: "Invalid refresh token. Please sign-in to continue",
+        };
+      }
+
+      const decoded = jwt.verify(refreshToken, userToken["refresh_secret"]);
+
+      const expectedHash = decoded.id;
+      const actualHash = crypto
+        .createHash("sha256")
+        .update(decoded.username)
+        .digest("hex");
+
+      if (actualHash !== expectedHash) {
+        return {
+          status: "failed",
+          code: "AUTH_REFRESH_ERR_401",
+          message: "Wrong refresh token is passed",
+        };
+      }
+
+      return {
+        status: "success",
+        data: decoded.username,
+      };
+    } catch (e) {
+      if (e.name && e.name === "TokenExpiredError") {
+        await this.deleteInActiveToken(refreshToken);
+        return {
+          status: "failed",
+          code: "AUTH_REFRESH_EXP_401",
+          message: "Refresh token expired. Please sign-in to continue",
+        };
       }
       throw e;
     }

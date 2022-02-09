@@ -1,7 +1,7 @@
 import { Router } from "express";
 import AuthenticationService from "../services/authentication-service";
 import { toError } from "../utils/response-utils";
-import { commonAuthorize } from "./authorization";
+import { commonAuthorize, refreshTokenAuthorize } from "./authorization";
 
 const authenticationService = new AuthenticationService();
 const router = Router();
@@ -38,7 +38,23 @@ const signout = async (req, res) => {
   }
 };
 
+const refreshToken = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    const username = req["username"];
+    const data = await authenticationService.refreshToken({
+      refreshToken,
+      username,
+    });
+    res.status(200).json(data);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json(toError());
+  }
+};
+
 router.post("/vbms/auth/signin", signin);
+router.post("/vbms/auth/refresh", refreshTokenAuthorize, refreshToken);
 router.post("/vbms/auth/signout", commonAuthorize, signout);
 
 export default router;

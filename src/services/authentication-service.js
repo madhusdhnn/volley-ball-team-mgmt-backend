@@ -11,12 +11,20 @@ class AuthenticationService {
     this.roleService = new RoleService();
   }
 
-  generateSecureRandomKey() {
-    return crypto.randomBytes(32).toString("hex");
+  generateSecureRandomKey(hash = false) {
+    const randomString = crypto.randomBytes(32).toString("hex");
+    if (!hash) {
+      return randomString;
+    }
+    return crypto.createHash("sha256").update(randomString).digest("hex");
+  }
+
+  generateHash(rawString) {
+    return crypto.createHash("sha256").update(rawString).digest("hex");
   }
 
   async register(userData) {
-    const { username, password, roleId } = userData;
+    const { username, firstName, lastName, password, roleId } = userData;
     const roleExists = await this.roleService.verifyRole(roleId);
     if (!roleExists) {
       return {
@@ -27,9 +35,9 @@ class AuthenticationService {
     }
     const hashed = this.passwordEncoder.encode(password);
     await volleyBallDb.query(
-      `INSERT INTO users (username, password, enabled, role_id, created_at, updated_at)
-          VALUES ($1, $2, $3, $4, now(), now())`,
-      [username, hashed, true, roleId]
+      `INSERT INTO users (username, password, enabled, first_name, last_name, role_id, created_at, updated_at)
+          VALUES ($1, $2, $3, $4, $5, $6, now(), now())`,
+      [username, hashed, true, firstName, lastName, roleId]
     );
     return { status: "success" };
   }
@@ -39,6 +47,10 @@ class AuthenticationService {
       `SELECT u.username,
               u.password,
               u.enabled,
+              u.first_name,
+              u.last_name,
+              u.profile_image_url,
+              u.email_id,
               r.role_id,
               r.name AS role_name,
               u.created_at,
@@ -70,27 +82,62 @@ class AuthenticationService {
       return { status: "failed", code: "AUTH_403", error: "User disabled" };
     }
 
-    const { username, enabled, role_id: roleId, role_name: roleName } = user;
+    const {
+      username,
+      enabled,
+      first_name: firstName,
+      last_name: lastName,
+      role_id: roleId,
+      role_name: roleName,
+      profile_image_url: profileImageUrl,
+      email_id: emailId,
+    } = user;
 
     const secretKey = this.generateSecureRandomKey();
-    let token = jwt.sign(
+    const refreshSecretKey = this.generateSecureRandomKey();
+
+    const userTokenData = {
+      username,
+      enabled,
+      firstName,
+      lastName,
+      fullName: firstName + " " + lastName,
+      roleId,
+      roleName,
+      profileImageUrl,
+      emailId,
+    };
+
+    let token = jwt.sign({ user: { ...userTokenData } }, secretKey, {
+      expiresIn: "1h",
+      issuer: "VolleyBallGameService",
+    });
+
+    let refreshToken = jwt.sign(
+      { id: this.generateHash(username), username },
+      refreshSecretKey,
       {
-        user: { username, enabled, roleId, roleName },
-      },
-      secretKey,
-      {
-        expiresIn: "1h",
+        expiresIn: "3h",
         issuer: "VolleyBallGameService",
       }
     );
 
     await volleyBallDb.query(
-      `INSERT INTO user_tokens (username, secret_key, token, last_used)
-          VALUES ($1, $2, $3, now())`,
-      [username, secretKey, token]
+      `INSERT INTO user_tokens (username, secret_key, token, refresh_token, refresh_secret, last_used)
+          VALUES ($1, $2, $3, $4, $5, now())`,
+      [username, secretKey, token, refreshToken, refreshSecretKey]
     );
 
-    return { status: "success", accessToken: token };
+    return {
+      status: "success",
+      user: { ...userTokenData },
+      authentication: {
+        tokenType: "Bearer",
+        accessToken: token,
+        refreshToken: refreshToken,
+        expiresIn: 3600,
+      },
+    };
   }
 
   async logout(user, jwtToken) {
@@ -99,6 +146,72 @@ class AuthenticationService {
       [user.username, jwtToken]
     );
     return { status: "success", code: "AUTH_CLEAR_200" };
+  }
+
+  async refreshToken(payload) {
+    const res = await volleyBallDb.query(
+      `SELECT u.username,
+              u.password,
+              u.enabled,
+              u.first_name,
+              u.last_name,
+              u.profile_image_url,
+              u.email_id,
+              r.role_id,
+              r.name AS role_name,
+              u.created_at,
+              u.updated_at
+        FROM users u
+              JOIN roles r ON u.role_id = r.role_id
+        WHERE username = $1`,
+      [payload.username]
+    );
+    const user = singleRowExtractor.extract(res);
+
+    const {
+      username,
+      enabled,
+      first_name: firstName,
+      last_name: lastName,
+      role_id: roleId,
+      role_name: roleName,
+      profile_image_url: profileImageUrl,
+      email_id: emailId,
+    } = user;
+
+    const secretKey = this.generateSecureRandomKey();
+
+    const userTokenData = {
+      username,
+      enabled,
+      firstName,
+      lastName,
+      fullName: firstName + " " + lastName,
+      roleId,
+      roleName,
+      profileImageUrl,
+      emailId,
+    };
+    let token = jwt.sign({ user: { ...userTokenData } }, secretKey, {
+      expiresIn: "1h",
+      issuer: "VolleyBallGameService",
+    });
+
+    await volleyBallDb.query(
+      `UPDATE user_tokens SET token = $1, secret_key = $2 WHERE refresh_token = $3`,
+      [token, secretKey, payload.refreshToken]
+    );
+
+    return {
+      status: "success",
+      user: { ...userTokenData },
+      authentication: {
+        tokenType: "Bearer",
+        accessToken: token,
+        refreshToken: payload.refreshToken,
+        expiresIn: 3600,
+      },
+    };
   }
 }
 

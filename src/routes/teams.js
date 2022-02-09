@@ -20,8 +20,7 @@ const getAllTeams = async (req, res) => {
 
 const createTeam = async (req, res) => {
   try {
-    const teamName = req.body.name;
-    const team = await teamService.createTeam(teamName);
+    const team = await teamService.createTeam(req.body);
     res.status(201).json({ status: "success", data: toTeam(team) });
   } catch (e) {
     console.error(e);
@@ -71,7 +70,7 @@ teamRouter.get(
   sameTeamAuthorize,
   getTeam
 );
-teamRouter.get("/vbms/api/v1/teams/all", adminAuthorize, getAllTeams);
+teamRouter.get("/vbms/api/v1/teams", adminAuthorize, getAllTeams);
 teamRouter.post("/vbms/api/v1/teams", adminAuthorize, createTeam);
 teamRouter.put("/vbms/api/v1/teams", adminAuthorize, updateTeam);
 teamRouter.delete("/vbms/api/v1/teams/:teamId", adminAuthorize, deleteTeam);

@@ -27,4 +27,4 @@ class BcryptPasswordEncoder {
   }
 }
 
-export { generateSecretKey, BcryptPasswordEncoder };
+export { BcryptPasswordEncoder };

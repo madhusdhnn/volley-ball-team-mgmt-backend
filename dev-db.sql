@@ -17,12 +17,16 @@ VALUES ('ADMIN', now(), now()),
 
 CREATE TABLE users
 (
-    username   text PRIMARY KEY,
-    password   text                     NOT NULL,
-    enabled    boolean                  NOT NULL,
-    role_id    bigint                   NOT NULL,
-    created_at timestamp with time zone NOT NULL,
-    updated_at timestamp with time zone NOT NULL
+    username           text PRIMARY KEY,
+    password           text                     NOT NULL,
+    enabled            boolean                  NOT NULL,
+    first_name         text                     NOT NULL,
+    last_name          text                     NOT NULL,
+    profile_image_url  text,
+    email_id           text,
+    role_id            bigint                   NOT NULL,
+    created_at         timestamp with time zone NOT NULL,
+    updated_at         timestamp with time zone NOT NULL
 );
 
 ALTER TABLE ONLY users
@@ -30,20 +34,20 @@ ALTER TABLE ONLY users
 
 CREATE INDEX user_role_id_fk_idx ON users (role_id);
 
-INSERT INTO users (username, password, enabled, role_id, created_at, updated_at)
-VALUES ('rGeller', '$2a$10$aOMprWWvZniSBhkTE7d/a.00lSdxBwTo17/opkDCFpILJgKinTII.', true, 2,
+INSERT INTO users (username, password, enabled, first_name, last_name, role_id, created_at, updated_at)
+VALUES ('rGeller', '$2a$10$aOMprWWvZniSBhkTE7d/a.00lSdxBwTo17/opkDCFpILJgKinTII.', true, 'Ross', 'Geller', 2,
         '2022-01-07 13:21:05.995268', '2022-01-07 13:21:05.995268'),
-       ('cBing', '$2a$10$trrSxiUw77oiedCIfG94g.00EJn.O0Wsoaz8U2QteSgme6b3Irxr.', true, 2, '2022-01-07 13:21:05.993923',
+       ('cBing', '$2a$10$trrSxiUw77oiedCIfG94g.00EJn.O0Wsoaz8U2QteSgme6b3Irxr.', true, 'Chandler', 'Bing', 2, '2022-01-07 13:21:05.993923',
         '2022-01-07 13:21:05.993923'),
-       ('rGreen', '$2a$10$LFLq.uo3Oo8gbeNaZpdLvOqA/PfaONMBu0vZaJg4IZo4jz4O1UvHS', true, 2, '2022-01-07 13:21:05.996447',
+       ('rGreen', '$2a$10$LFLq.uo3Oo8gbeNaZpdLvOqA/PfaONMBu0vZaJg4IZo4jz4O1UvHS', true, 'Rachel', 'Green', 2, '2022-01-07 13:21:05.996447',
         '2022-01-07 13:21:05.996447'),
-       ('jTribbianni', '$2a$10$DMbS6VlT1Z2ilsaebarewuazFlGRt4moU5aA/L1C6l9qMWrGs7.tO', true, 2,
+       ('jTribbianni', '$2a$10$DMbS6VlT1Z2ilsaebarewuazFlGRt4moU5aA/L1C6l9qMWrGs7.tO', true, 'JOey', 'Tribbianni', 2,
         '2022-01-07 13:21:05.991583', '2022-01-07 13:21:05.991583'),
-       ('mGeller', '$2a$10$xnMkvEhVVqJNxWN81/Rbt.LiIzz88Hv8GrU.4455FEoJoWaMh94Sy', true, 2,
+       ('mGeller', '$2a$10$xnMkvEhVVqJNxWN81/Rbt.LiIzz88Hv8GrU.4455FEoJoWaMh94Sy', true, 'Monica', 'Geller', 2,
         '2022-01-07 13:21:05.995934', '2022-01-07 13:21:05.995934'),
-       ('pBuffay', '$2a$10$DAcxcx/az7gVfRnzR/3P2O.B1pQiPULAP6Vr9VFgwsTrELO8vezsu', true, 2,
+       ('pBuffay', '$2a$10$DAcxcx/az7gVfRnzR/3P2O.B1pQiPULAP6Vr9VFgwsTrELO8vezsu', true, 'Phoebe', 'Buffay', 2,
         '2022-01-07 13:21:05.996953', '2022-01-07 13:21:05.996953'),
-       ('admin', '$2a$10$ZJvSceHhLl2bcbMyBRUMqeeQDB4K7v79DulFznVZFF0X1.L4S4G9i', true, 1, '2022-01-08 10:44:42.909740',
+       ('admin', '$2a$10$ZJvSceHhLl2bcbMyBRUMqeeQDB4K7v79DulFznVZFF0X1.L4S4G9i', true, 'David', 'Crane', 1, '2022-01-08 10:44:42.909740',
         '2022-01-08 10:44:42.909740');
 
 CREATE TABLE user_tokens
@@ -52,6 +56,8 @@ CREATE TABLE user_tokens
     username           text                     NOT NULL,
     secret_key         text                     NOT NULL,
     token              text                     NOT NULL,
+    refresh_secret     text                     NOT NULL, 
+    refresh_token      text                     NOT NULL,
     last_used          timestamp with time zone NOT NULL
 );
 
@@ -87,8 +93,8 @@ ALTER TABLE ONLY teams
     ADD CONSTRAINT team_name_unique UNIQUE (name);
 
 INSERT INTO teams (name, max_players, created_at, updated_at)
-VALUES ('friends-girls', 6, '2022-01-07 18:53:00.582000', '2022-01-07 18:53:04.598000'),
-       ('friends-boys', 6, '2022-01-07 18:52:43.253000', '2022-01-07 18:52:47.277000');
+VALUES ('Friends Girls', 6, '2022-01-07 18:53:00.582000', '2022-01-07 18:53:04.598000'),
+       ('Friends Boys', 6, '2022-01-07 18:52:43.253000', '2022-01-07 18:52:47.277000');
 
 CREATE TABLE players
 (
