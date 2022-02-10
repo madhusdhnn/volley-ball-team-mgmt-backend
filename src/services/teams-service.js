@@ -28,9 +28,13 @@ class TeamsService {
   async createTeam(team) {
     try {
       const { teamName } = team;
+
+      const teamNameFormatted =
+        teamName.substring(0, 1).toUpperCase() + teamName.substring(1);
+
       const data = await volleyBallDb.query(
         "INSERT INTO teams (name, max_players, created_at, updated_at) VALUES ($1, $2, now(), now()) RETURNING team_id",
-        [teamName, 6]
+        [teamNameFormatted, 6]
       );
       const res = await volleyBallDb.query(
         "SELECT * from teams WHERE team_id = $1",
