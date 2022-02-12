@@ -87,16 +87,12 @@ const deletePlayer = async (req, res) => {
 
 const assignToTeam = async (req, res) => {
   try {
-    const { playerId, teamId } = req.body;
-    const player = await playerService.assignToTeam(playerId, teamId);
-    if (!player) {
-      res
-        .status(400)
-        .json({ status: "failed", error: "Player does not exists" });
-    } else if (player.error) {
-      res.status(400).json({ status: "failed", error: player.error });
+    const { playerIds, teamId } = req.body;
+    const resp = await playerService.assignToTeam(playerIds, teamId);
+    if (resp.error) {
+      res.status(400).json(resp);
     } else {
-      res.json({ status: "success", data: toPlayer(player) });
+      res.json(resp);
     }
   } catch (e) {
     console.error(e);
@@ -131,6 +127,19 @@ const transferToTeam = async (req, res) => {
   }
 };
 
+const getAllPlayerNotInTeam = async (req, res) => {
+  try {
+    const players = await playerService.getAllPlayerNotInTeam();
+    res.json({
+      status: "success",
+      data: players.map((_player) => toPlayer(_player)),
+    });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ status: "failed", error: "Something went wrong!" });
+  }
+};
+
 playerRouter.get(
   "/vbms/api/v1/players/metadata",
   commonAuthorize,
@@ -153,6 +162,11 @@ playerRouter.put(
   commonAuthorize,
   samePlayerAuthorize,
   updatePlayer
+);
+playerRouter.get(
+  "/vbms/api/v1/players/available",
+  adminAuthorize,
+  getAllPlayerNotInTeam
 );
 playerRouter.get("/vbms/api/v1/players", adminAuthorize, getAllPlayers);
 playerRouter.post("/vbms/api/v1/players", adminAuthorize, createPlayer);

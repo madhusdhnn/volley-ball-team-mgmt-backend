@@ -1,6 +1,5 @@
 import volleyBallDb from "../config/db";
 import { multipleRowsExtractor, singleRowExtractor } from "../utils/db-utils";
-
 class PlayerService {
   getFieldsToUpdate = (player) => {
     const fields = {};
@@ -38,6 +37,28 @@ class PlayerService {
     }
     return Object.freeze(fields);
   };
+
+  async getAllPlayerNotInTeam() {
+    const query = `SELECT t.name AS team_name,
+                          p.player_id,
+                          p.username,
+                          p.team_id,
+                          p.name,
+                          p.shirt_no,
+                          p.age,
+                          p.height,
+                          p.weight,
+                          p.power,
+                          p.speed,
+                          p.favourite_positions,
+                          p.created_at,
+                          p.updated_at
+                      FROM players p
+                          LEFT JOIN teams t ON t.team_id = p.team_id
+                      WHERE p.team_id IS NULL`;
+    const res = await volleyBallDb.query(query);
+    return multipleRowsExtractor.extract(res);
+  }
 
   async getTotalPlayersInTeam(currentTeamId) {
     const res = await volleyBallDb.query(
@@ -211,17 +232,28 @@ class PlayerService {
     }
   }
 
-  async assignToTeam(playerId, teamId) {
+  async assignToTeam(playerIds = [], teamId) {
     try {
       const totalPlayers = await this.getTotalPlayersInTeam(teamId);
       if (totalPlayers > 6) {
-        return { error: "Team can contain only 6 players at a time" };
+        return {
+          status: "failed",
+          error: "Team can contain only 6 players at a time",
+        };
       }
-      await volleyBallDb.query(
-        "UPDATE players SET team_id = $1 WHERE player_id = $2",
-        [teamId, playerId]
+
+      const res = await volleyBallDb.query(
+        "UPDATE players SET team_id = $1 WHERE player_id = ANY ($2::bigint[]) returning player_id",
+        [teamId, playerIds]
       );
-      return await this.getPlayer(playerId);
+
+      if (res.rowCount !== playerIds.length) {
+        return {
+          status: "failed",
+          error: "Some of the players in input does not exist!",
+        };
+      }
+      return { status: "success" };
     } catch (e) {
       throw e;
     }

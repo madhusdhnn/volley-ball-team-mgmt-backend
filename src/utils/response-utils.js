@@ -36,8 +36,14 @@ const toPlayer = (player) => {
     updated_at,
   } = player;
 
+  const [firstName, lastName] = name.split(" ");
+
+  const initials =
+    firstName.substring(0, 1) + "" + (lastName ? lastName.substring(0, 1) : "");
+
   _player.playerId = player_id;
   _player.name = name;
+  _player.initials = initials;
   _player.photoUrl = null;
   _player.shirtNo = shirt_no;
   _player.team = { id: team_id, name: team_name };
@@ -47,6 +53,7 @@ const toPlayer = (player) => {
     weight,
     power,
     speed,
+    location: null,
     favouritePositions: favourite_positions,
   };
   _player.audit = { createdAt: created_at, updatedAt: updated_at };
