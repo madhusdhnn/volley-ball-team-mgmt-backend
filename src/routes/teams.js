@@ -1,6 +1,6 @@
 import { Router } from "express";
 import TeamService from "../services/teams-service";
-import { toTeam } from "../utils/response-utils";
+import { toError, toTeam } from "../utils/response-utils";
 import { adminAuthorize, sameTeamAuthorize } from "../routes/authorization";
 
 const teamService = new TeamService();
@@ -14,7 +14,7 @@ const getAllTeams = async (req, res) => {
       .json({ status: "success", data: teams.map((t) => toTeam(t)) });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ status: "failed", error: "Something went wrong!" });
+    res.status(500).json(toError(e));
   }
 };
 
@@ -24,10 +24,7 @@ const createTeam = async (req, res) => {
     res.status(201).json({ status: "success", data: toTeam(team) });
   } catch (e) {
     console.error(e);
-    res.status(500).json({
-      status: "failed",
-      error: `Error creating team. Reason: ${e.detail}`,
-    });
+    res.status(500).json(toError(e, "ERR_500", "Error creating team"));
   }
 };
 
@@ -38,7 +35,7 @@ const getTeam = async (req, res) => {
     res.json({ status: "success", data: toTeam(team) });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ status: "failed", error: "Something went wrong!" });
+    res.status(500).json(toError(e));
   }
 };
 
@@ -49,7 +46,7 @@ const updateTeam = async (req, res) => {
     res.json({ status: "success", data: toTeam(team) });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ status: "failed", error: "Something went wrong!" });
+    res.status(500).json(toError(e));
   }
 };
 
@@ -60,7 +57,7 @@ const deleteTeam = async (req, res) => {
     res.json({ status: "success", message: "Deleted successfully" });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ status: "failed", error: "Something went wrong!" });
+    res.status(500).json(toError(e));
   }
 };
 

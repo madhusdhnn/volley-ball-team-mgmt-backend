@@ -19,7 +19,7 @@ const fetchPlayerUnitsMetadata = async (req, res) => {
     res.json(playerUnits);
   } catch (e) {
     console.error(e);
-    res.status(500).json(toError());
+    res.status(500).json(toError(e));
   }
 };
 
@@ -39,7 +39,7 @@ const getAllPlayers = async (req, res) => {
     res.json({ status: "success", data: players.map((pl) => toPlayer(pl)) });
   } catch (e) {
     console.error(e);
-    res.status(500).json(toError());
+    res.status(500).json(toError(e));
   }
 };
 
@@ -50,7 +50,7 @@ const getPlayer = async (req, res) => {
     res.json({ status: "success", data: toPlayer(player) });
   } catch (e) {
     console.error(e);
-    res.status(500).json(toError());
+    res.status(500).json(toError(e));
   }
 };
 
@@ -61,7 +61,7 @@ const getAllPlayersInTeam = async (req, res) => {
     res.json({ status: "success", data: players.map((pl) => toPlayer(pl)) });
   } catch (e) {
     console.error(e);
-    res.status(500).json(toError());
+    res.status(500).json(toError(e));
   }
 };
 
@@ -71,7 +71,7 @@ const updatePlayer = async (req, res) => {
     res.json({ status: "success", data: toPlayer(player) });
   } catch (e) {
     console.error(e);
-    res.status(500).json(toError());
+    res.status(500).json(toError(e));
   }
 };
 
@@ -81,7 +81,7 @@ const deletePlayer = async (req, res) => {
     res.json({ status: "success", message: "Deleted successfully" });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ status: "failed", error: "Something went wrong!" });
+    res.status(500).json(toError(e));
   }
 };
 
@@ -96,12 +96,7 @@ const assignToTeam = async (req, res) => {
     }
   } catch (e) {
     console.error(e);
-    res.status(500).json({
-      status: "failed",
-      error: `Unable to assign to team. Reason: ${
-        e.detail || e.message || "Something went wrong"
-      }`,
-    });
+    res.status(500).json(toError(e, "ERR_500", "Unable to assign to team."));
   }
 };
 
@@ -120,10 +115,11 @@ const transferToTeam = async (req, res) => {
     }
   } catch (e) {
     console.error(e);
-    res.status(500).json({
-      status: "failed",
-      error: `Unable to transfer the player to new team. Reason: ${e.detail}`,
-    });
+    res
+      .status(500)
+      .json(
+        toError(e, "ERR_500", "Unable to transfer the player to new team.")
+      );
   }
 };
 
@@ -136,7 +132,7 @@ const getAllPlayerNotInTeam = async (req, res) => {
     });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ status: "failed", error: "Something went wrong!" });
+    res.status(500).json(toError(e));
   }
 };
 

@@ -21,7 +21,7 @@ const signin = async (req, res) => {
     }
   } catch (e) {
     console.error(e);
-    res.status(500).json(toError());
+    res.status(500).json(toError(e));
   }
 };
 
@@ -34,7 +34,7 @@ const signout = async (req, res) => {
     res.status(200).json(response);
   } catch (e) {
     console.error(e);
-    res.status(500).json(toError());
+    res.status(500).json(toError(e));
   }
 };
 
@@ -49,7 +49,7 @@ const refreshToken = async (req, res) => {
     res.status(200).json(data);
   } catch (e) {
     console.error(e);
-    res.status(500).json(toError());
+    res.status(500).json(toError(e));
   }
 };
 

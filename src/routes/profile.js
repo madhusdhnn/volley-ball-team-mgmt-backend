@@ -9,7 +9,7 @@ const getProfile = async (req, res) => {
     res.status(200).json({ status: "success", data: user });
   } catch (e) {
     console.error(e);
-    res.status(500).json(toError());
+    res.status(500).json(toError(e));
   }
 };
 

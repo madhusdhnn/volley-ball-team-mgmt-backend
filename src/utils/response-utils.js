@@ -3,12 +3,16 @@ const toError = (e, errCode, message) => {
     status: "failed",
     code: "ERR_500",
     message: "Something went wrong!",
+    detail: "Internal error",
   };
 
   if (e) {
-    const errorMessage = `${message}. Reason: ${e.detail || JSON.stringify(e)}`;
-    const code = errCode || error.code;
-    error = { ...error, code, message: errorMessage };
+    error = {
+      status: "failed",
+      code: errCode || error.code,
+      message: message || error.message,
+      detail: e.detail || JSON.stringify(e),
+    };
   }
   return error;
 };

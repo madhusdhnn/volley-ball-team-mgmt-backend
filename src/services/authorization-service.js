@@ -36,7 +36,9 @@ class AuthorizationService {
 
       return {
         status: "success",
-        data: jwt.verify(jwtToken, userToken["secret_key"]),
+        data: jwt.verify(jwtToken, userToken["secret_key"], {
+          issuer: "VBMSAuthService",
+        }),
       };
     } catch (e) {
       if (e.name && e.name === "TokenExpiredError") {
@@ -70,7 +72,9 @@ class AuthorizationService {
         };
       }
 
-      const decoded = jwt.verify(refreshToken, userToken["refresh_secret"]);
+      const decoded = jwt.verify(refreshToken, userToken["refresh_secret"], {
+        issuer: "VBMSAuthService",
+      });
 
       const expectedHash = decoded.id;
       const actualHash = crypto

@@ -110,7 +110,8 @@ class AuthenticationService {
 
     let token = jwt.sign({ user: { ...userTokenData } }, secretKey, {
       expiresIn: "1h",
-      issuer: "VolleyBallGameService",
+      issuer: "VBMSAuthService",
+      subject: userTokenData.username,
     });
 
     let refreshToken = jwt.sign(
@@ -118,7 +119,8 @@ class AuthenticationService {
       refreshSecretKey,
       {
         expiresIn: "3h",
-        issuer: "VolleyBallGameService",
+        issuer: "VBMSAuthService",
+        subject: userTokenData.username,
       }
     );
 
@@ -130,12 +132,11 @@ class AuthenticationService {
 
     return {
       status: "success",
-      user: { ...userTokenData },
-      authentication: {
-        tokenType: "Bearer",
+      data: {
         accessToken: token,
         refreshToken: refreshToken,
         expiresIn: 3600,
+        user: { ...userTokenData },
       },
     };
   }
@@ -192,10 +193,13 @@ class AuthenticationService {
       profileImageUrl,
       emailId,
     };
-    let token = jwt.sign({ user: { ...userTokenData } }, secretKey, {
-      expiresIn: "1h",
-      issuer: "VolleyBallGameService",
-    });
+
+    const jwtOptions = {
+      expiresIn: process.env.AUTH_TOKEN_EXPIRY,
+      issuer: process.env.ISSUER,
+    };
+
+    let token = jwt.sign({ user: { ...userTokenData } }, secretKey);
 
     await volleyBallDb.query(
       `UPDATE user_tokens SET token = $1, secret_key = $2 WHERE refresh_token = $3`,
@@ -204,12 +208,11 @@ class AuthenticationService {
 
     return {
       status: "success",
-      user: { ...userTokenData },
-      authentication: {
-        tokenType: "Bearer",
+      data: {
         accessToken: token,
         refreshToken: payload.refreshToken,
         expiresIn: 3600,
+        user: { ...userTokenData },
       },
     };
   }

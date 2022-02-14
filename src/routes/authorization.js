@@ -1,8 +1,7 @@
 import AuthorizationService from "../services/authorization-service";
 import PlayerService from "../services/player-service";
 import TeamsService from "../services/teams-service";
-import { singleRowExtractor } from "../utils/db-utils";
-import { toPlayer, toTeam } from "../utils/response-utils";
+import { toError, toPlayer, toTeam } from "../utils/response-utils";
 
 const authorizationService = new AuthorizationService();
 const teamService = new TeamsService();
@@ -58,7 +57,7 @@ const authorizeUser = async (req, res, next, roleNames = []) => {
       }
     }
   } catch (e) {
-    res.status(500).json({ error: e.message || "Something went wrong" });
+    res.status(500).json(toError(e));
   }
 };
 
@@ -79,7 +78,7 @@ const sameTeamAuthorize = async (req, res, next) => {
       res.status(401).json({
         status: "failed",
         code: "AUTH_TEAM_401",
-        message: "Team Id not found in the request",
+        message: "Team ID not found in the request",
       });
     } else {
       const teamInRequest = toTeam(await teamService.getTeam(teamId));
@@ -98,10 +97,7 @@ const sameTeamAuthorize = async (req, res, next) => {
     }
   } catch (e) {
     console.error(e);
-    res.status(500).json({
-      status: "failed",
-      error: "Something went wrong",
-    });
+    res.status(500).json(toError(e));
   }
 };
 
@@ -125,10 +121,7 @@ const samePlayerAuthorize = async (req, res, next) => {
     }
   } catch (e) {
     console.error(e);
-    res.status(500).json({
-      status: "failed",
-      error: "Something went wrong",
-    });
+    res.status(500).json(toError(e));
   }
 };
 
@@ -152,10 +145,7 @@ const currentPlayerTeamAuthorize = async (req, res, next) => {
     }
   } catch (e) {
     console.error(e);
-    res.status(500).json({
-      status: "failed",
-      error: "Something went wrong",
-    });
+    res.status(500).json(toError(e));
   }
 };
 const refreshTokenAuthorize = async (req, res, next) => {
@@ -172,10 +162,7 @@ const refreshTokenAuthorize = async (req, res, next) => {
     }
   } catch (e) {
     console.error(e);
-    res.status(500).json({
-      status: "failed",
-      error: "Something went wrong",
-    });
+    res.status(500).json(toError(e));
   }
 };
 

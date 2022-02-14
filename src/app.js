@@ -4,6 +4,9 @@ import AuthenticationRouter from "./routes/authentication";
 import TeamRouter from "./routes/teams";
 import PlayerRouter from "./routes/players";
 import ProfileRouter from "./routes/profile";
+import dotenv from "dotenv";
+
+dotenv.config({ path: `./env_vars/${process.env.NODE_ENV || "development"}` });
 
 const createApp = (...routes) => {
   const app = express();
