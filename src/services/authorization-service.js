@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import volleyBallDb from "../config/db";
 import { singleRowExtractor } from "../utils/db-utils";
 import crypto from "crypto";
+import { generateHash } from "../utils/auth-utils";
 class AuthorizationService {
   async deleteInActiveToken(refreshToken) {
     await volleyBallDb.query(
@@ -37,7 +38,7 @@ class AuthorizationService {
       return {
         status: "success",
         data: jwt.verify(jwtToken, userToken["secret_key"], {
-          issuer: "VBMSAuthService",
+          issuer: process.env.ISSUER,
         }),
       };
     } catch (e) {
@@ -73,20 +74,17 @@ class AuthorizationService {
       }
 
       const decoded = jwt.verify(refreshToken, userToken["refresh_secret"], {
-        issuer: "VBMSAuthService",
+        issuer: process.env.ISSUER,
       });
 
       const expectedHash = decoded.id;
-      const actualHash = crypto
-        .createHash("sha256")
-        .update(decoded.username)
-        .digest("hex");
+      const actualHash = generateHash(decoded.username);
 
       if (actualHash !== expectedHash) {
         return {
           status: "failed",
           code: "AUTH_REFRESH_ERR_401",
-          message: "Wrong refresh token is passed",
+          message: "Unauthorized client",
         };
       }
 

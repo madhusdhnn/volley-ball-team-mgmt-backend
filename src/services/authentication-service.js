@@ -3,24 +3,16 @@ import volleyBallDb from "../config/db";
 import { singleRowExtractor } from "../utils/db-utils";
 import RoleService from "./role-service";
 import jwt from "jsonwebtoken";
-import { BcryptPasswordEncoder } from "../utils/auth-utils";
+import {
+  BcryptPasswordEncoder,
+  generateHash,
+  generateSecureRandomKey,
+} from "../utils/auth-utils";
 
 class AuthenticationService {
   constructor() {
     this.passwordEncoder = new BcryptPasswordEncoder();
     this.roleService = new RoleService();
-  }
-
-  generateSecureRandomKey(hash = false) {
-    const randomString = crypto.randomBytes(32).toString("hex");
-    if (!hash) {
-      return randomString;
-    }
-    return crypto.createHash("sha256").update(randomString).digest("hex");
-  }
-
-  generateHash(rawString) {
-    return crypto.createHash("sha256").update(rawString).digest("hex");
   }
 
   async register(userData) {
@@ -93,8 +85,8 @@ class AuthenticationService {
       email_id: emailId,
     } = user;
 
-    const secretKey = this.generateSecureRandomKey();
-    const refreshSecretKey = this.generateSecureRandomKey();
+    const secretKey = generateSecureRandomKey();
+    const refreshSecretKey = generateSecureRandomKey();
 
     const userTokenData = {
       username,
@@ -115,7 +107,7 @@ class AuthenticationService {
     });
 
     let refreshToken = jwt.sign(
-      { id: this.generateHash(username), username },
+      { id: generateHash(username), username },
       refreshSecretKey,
       {
         expiresIn: "3h",
@@ -180,7 +172,7 @@ class AuthenticationService {
       email_id: emailId,
     } = user;
 
-    const secretKey = this.generateSecureRandomKey();
+    const secretKey = generateSecureRandomKey();
 
     const userTokenData = {
       username,
