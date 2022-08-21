@@ -21,7 +21,7 @@ const getAllTeams = async (req, res) => {
 const createTeam = async (req, res) => {
   try {
     const team = await teamService.createTeam(req.body);
-    res.status(201).json({ status: "success", data: toTeam(team) });
+    res.status(201).json({ status: "success", data: { ...team } });
   } catch (e) {
     console.error(e);
     res.status(500).json(toError(e, "ERR_500", "Error creating team"));
@@ -53,6 +53,7 @@ const updateTeam = async (req, res) => {
 const deleteTeam = async (req, res) => {
   try {
     const teamId = req.params["teamId"];
+    console.log(teamId);
     await teamService.deleteTeam(teamId);
     res.json({ status: "success", message: "Deleted successfully" });
   } catch (e) {

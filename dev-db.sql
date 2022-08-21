@@ -62,8 +62,6 @@ CREATE TABLE user_tokens
     username           text                     NOT NULL,
     secret_key         text                     NOT NULL,
     token              text                     NOT NULL,
-    refresh_secret     text                     NOT NULL, 
-    refresh_token      text                     NOT NULL,
     last_used          timestamp with time zone NOT NULL
 );
 

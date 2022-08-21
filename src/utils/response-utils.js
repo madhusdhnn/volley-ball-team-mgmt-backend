@@ -76,5 +76,5 @@ const toTeam = (team) => {
   _team.audit = { createdAt: created_at, updatedAt: updated_at };
   return _team;
 };
-
+ 
 export { toError, toPlayer, toTeam };

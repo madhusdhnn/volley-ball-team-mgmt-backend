@@ -36,11 +36,8 @@ class TeamsService {
         "INSERT INTO teams (name, max_players, created_at, updated_at) VALUES ($1, $2, now(), now()) RETURNING team_id",
         [teamNameFormatted, 6]
       );
-      const res = await volleyBallDb.query(
-        "SELECT * from teams WHERE team_id = $1",
-        [data.rows[0]["team_id"]]
-      );
-      return singleRowExtractor.extract(res);
+
+      return { teamId: data.rows[0]["team_id"] };
     } catch (e) {
       throw e;
     }

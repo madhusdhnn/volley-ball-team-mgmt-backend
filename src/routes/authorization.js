@@ -43,7 +43,7 @@ const authorizeUser = async (req, res, next, roleNames = []) => {
       res.status(401).json({
         status: "failed",
         code: "AUTH_401",
-        error: "Auth token not found in header",
+        error: "Unauthorized! Auth token not found in header",
       });
     } else {
       const authorization = await authorize(jwtToken, roleNames);
@@ -148,23 +148,6 @@ const currentPlayerTeamAuthorize = async (req, res, next) => {
     res.status(500).json(toError(e));
   }
 };
-const refreshTokenAuthorize = async (req, res, next) => {
-  try {
-    const { refreshToken } = req.body;
-    const authorization = await authorizationService.verifyRefreshToken(
-      refreshToken
-    );
-    if (authorization.status === "failed") {
-      res.status(401).json(authorization);
-    } else {
-      req.username = authorization.data;
-      next();
-    }
-  } catch (e) {
-    console.error(e);
-    res.status(500).json(toError(e));
-  }
-};
 
 export {
   adminAuthorize,
@@ -172,5 +155,4 @@ export {
   sameTeamAuthorize,
   samePlayerAuthorize,
   currentPlayerTeamAuthorize,
-  refreshTokenAuthorize,
 };

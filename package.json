@@ -4,7 +4,7 @@
   "description": "Backend service for Volley ball team management",
   "main": "app.js",
   "scripts": {
-    "dev": "NODE_ENV=development nodemon --exec babel-node src/app.js",
+    "dev": "set NODE_ENV=development&& nodemon --exec babel-node src/app.js",
     "clean": "rm -rf dist",
     "build": "NODE_ENV=production npm run clean && babel src/ -d dist",
     "start": "NODE_ENV=production node dist/app.js"

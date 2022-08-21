@@ -28,10 +28,6 @@ class BcryptPasswordEncoder {
   }
 }
 
-const generateHash = (rawString = "") => {
-  return crypto.createHash("sha256").update(rawString).digest("hex");
-};
-
 const generateSecureRandomKey = (hash = false) => {
   const randomString = crypto.randomBytes(32).toString("hex");
   if (!hash) {
@@ -40,4 +36,4 @@ const generateSecureRandomKey = (hash = false) => {
   return crypto.createHash("sha256").update(randomString).digest("hex");
 };
 
-export { BcryptPasswordEncoder, generateHash, generateSecureRandomKey };
+export { BcryptPasswordEncoder, generateSecureRandomKey };

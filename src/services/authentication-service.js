@@ -5,7 +5,6 @@ import RoleService from "./role-service";
 import jwt from "jsonwebtoken";
 import {
   BcryptPasswordEncoder,
-  generateHash,
   generateSecureRandomKey,
 } from "../utils/auth-utils";
 
@@ -62,16 +61,16 @@ class AuthenticationService {
       };
     }
 
+    if (!user.enabled) {
+      return { status: "failed", code: "AUTH_403", error: "User disabled" };
+    }
+
     if (!this.passwordEncoder.matches(payload.password, user.password)) {
       return {
         status: "failed",
         code: "AUTH_401",
         error: "Password is wrong",
       };
-    }
-
-    if (!user.enabled) {
-      return { status: "failed", code: "AUTH_403", error: "User disabled" };
     }
 
     const {
@@ -86,7 +85,6 @@ class AuthenticationService {
     } = user;
 
     const secretKey = generateSecureRandomKey();
-    const refreshSecretKey = generateSecureRandomKey();
 
     const userTokenData = {
       username,
@@ -106,27 +104,16 @@ class AuthenticationService {
       subject: userTokenData.username,
     });
 
-    let refreshToken = jwt.sign(
-      { id: generateHash(username), username },
-      refreshSecretKey,
-      {
-        expiresIn: "3h",
-        issuer: "VBMSAuthService",
-        subject: userTokenData.username,
-      }
-    );
-
     await volleyBallDb.query(
-      `INSERT INTO user_tokens (username, secret_key, token, refresh_token, refresh_secret, last_used)
-          VALUES ($1, $2, $3, $4, $5, now())`,
-      [username, secretKey, token, refreshToken, refreshSecretKey]
+      `INSERT INTO user_tokens (username, secret_key, token, last_used)
+          VALUES ($1, $2, $3, now())`,
+      [username, secretKey, token]
     );
 
     return {
       status: "success",
       data: {
         accessToken: token,
-        refreshToken: refreshToken,
         expiresIn: 3600,
         user: { ...userTokenData },
       },
@@ -141,72 +128,12 @@ class AuthenticationService {
     return { status: "success", code: "AUTH_CLEAR_200" };
   }
 
-  async refreshToken(payload) {
-    const res = await volleyBallDb.query(
-      `SELECT u.username,
-              u.password,
-              u.enabled,
-              u.first_name,
-              u.last_name,
-              u.profile_image_url,
-              u.email_id,
-              r.role_id,
-              r.name AS role_name,
-              u.created_at,
-              u.updated_at
-        FROM users u
-              JOIN roles r ON u.role_id = r.role_id
-        WHERE username = $1`,
-      [payload.username]
-    );
-    const user = singleRowExtractor.extract(res);
+  async logoutAllSessions(user) {
+    await volleyBallDb.query(`DELETE FROM user_tokens WHERE username = $1`, [
+      user.username,
+    ]);
 
-    const {
-      username,
-      enabled,
-      first_name: firstName,
-      last_name: lastName,
-      role_id: roleId,
-      role_name: roleName,
-      profile_image_url: profileImageUrl,
-      email_id: emailId,
-    } = user;
-
-    const secretKey = generateSecureRandomKey();
-
-    const userTokenData = {
-      username,
-      enabled,
-      firstName,
-      lastName,
-      fullName: firstName + " " + lastName,
-      roleId,
-      roleName,
-      profileImageUrl,
-      emailId,
-    };
-
-    const jwtOptions = {
-      expiresIn: process.env.AUTH_TOKEN_EXPIRY,
-      issuer: process.env.ISSUER,
-    };
-
-    let token = jwt.sign({ user: { ...userTokenData } }, secretKey);
-
-    await volleyBallDb.query(
-      `UPDATE user_tokens SET token = $1, secret_key = $2 WHERE refresh_token = $3`,
-      [token, secretKey, payload.refreshToken]
-    );
-
-    return {
-      status: "success",
-      data: {
-        accessToken: token,
-        refreshToken: payload.refreshToken,
-        expiresIn: 3600,
-        user: { ...userTokenData },
-      },
-    };
+    return { status: "success", code: "AUTH_ALL_CLEAR_200" };
   }
 }
 
