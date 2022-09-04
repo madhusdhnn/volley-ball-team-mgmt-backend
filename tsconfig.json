@@ -4,20 +4,19 @@
     "target": "ES2015",
     "moduleResolution": "node",
     "outDir": "dist",
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "useUnknownInCatchVariables": false,
     "strict": true,
-    "allowJs": false,
     "noEmit": true,
-    "noImplicitAny": true,
-    "strictFunctionTypes": true,
-    "strictPropertyInitialization": false,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    "allowJs": false,
     "skipLibCheck": true,
-    "noFallthroughCasesInSwitch": true
+    "noImplicitAny": true,
+    "noUnusedLocals": true,
+    "esModuleInterop": true,
+    "noUnusedParameters": true,
+    "strictFunctionTypes": true,
+    "noFallthroughCasesInSwitch": true,
+    "useUnknownInCatchVariables": false,
+    "strictPropertyInitialization": false,
+    "forceConsistentCasingInFileNames": true
   },
-  "include": ["./src/**/*.ts", "./src/app.ts"],
-  "exclude": ["node_modules", "dist"]
+  "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
 }
