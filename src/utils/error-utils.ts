@@ -21,8 +21,4 @@ class IncorrectResultSetDataAccessError extends Error {
     this.name = "IncorrectResultSetDataAccessError";
   }
 }
-export {
-  IllegalArgumentError,
-  AuthenticationError,
-  IncorrectResultSetDataAccessError,
-};
+export { IllegalArgumentError, AuthenticationError, IncorrectResultSetDataAccessError };

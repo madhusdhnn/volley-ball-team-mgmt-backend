@@ -9,26 +9,25 @@ export interface IRowMapper<D, T> {
   mapRow(row: D, rowNumber: number): T;
 }
 
-export interface ResultSetExtractor<D extends QueryResultRow, T> {
+export interface IResultSetExtractor<D extends QueryResultRow, T> {
   extract(resultSet: QueryResult<D>): T;
 }
 
-export class RowMapperResultSetExtractor<D extends QueryResultRow, T>
-  implements ResultSetExtractor<D, T[]>
-{
+export class RowMapperResultSetExtractor<D extends QueryResultRow, T> implements IResultSetExtractor<D, T[]> {
   private readonly rowMapper: IRowMapper<D, T>;
   private readonly rowsExpected: number;
 
-  constructor(rowMapper: IRowMapper<D, T>, rowsExpected: number = 0) {
+  constructor(rowMapper: IRowMapper<D, T>, rowsExpected = 0) {
     this.rowMapper = rowMapper;
     this.rowsExpected = rowsExpected;
   }
 
   extract(resultSet: QueryResult<D>): T[] {
-    let results: T[] = this.rowsExpected > 0 ? Array(this.rowsExpected) : [];
+    const results: T[] = this.rowsExpected > 0 ? Array(this.rowsExpected) : [];
     let rowNum = 0;
     for (const row of resultSet.rows) {
-      results.push(this.rowMapper.mapRow(row, rowNum++));
+      rowNum = rowNum + 1;
+      results.push(this.rowMapper.mapRow(row, rowNum));
     }
     return results;
   }
@@ -40,9 +39,7 @@ export const nullableSingleResult = <T>(results: T[]): T => {
   }
 
   if (results.length > 1) {
-    throw new IncorrectResultSetDataAccessError(
-      `Incorrect result size. Expected - 1. Got - ${results.length}`
-    );
+    throw new IncorrectResultSetDataAccessError(`Incorrect result size. Expected - 1. Got - ${results.length}`);
   }
 
   return results[0] as T;

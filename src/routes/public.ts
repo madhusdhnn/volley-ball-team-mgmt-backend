@@ -25,7 +25,6 @@ const getResponseCodes = async (_req: Request, res: Response) => {
   try {
     res.status(200).json({ status: "success", data: responseCodes });
   } catch (e) {
-    console.error(e);
     res.status(500).json(toError(e));
   }
 };

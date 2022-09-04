@@ -2,14 +2,14 @@ import { NextFunction, Request, Response } from "express";
 import AuthorizationService from "../services/authorization-service";
 import PlayerService from "../services/player-service";
 import TeamsService from "../services/teams-service";
-import { AuthenticableRequest, Player } from "../utils/types";
+import { IAuthenticableRequest, IPlayer } from "../utils/types";
 import { toError } from "../utils/response-utils";
 
 const authorizationService = new AuthorizationService();
 const teamService = new TeamsService();
 const playerService = new PlayerService();
 
-const getCurrentPlayer = async (username: string): Promise<Player> => {
+const getCurrentPlayer = async (username: string): Promise<IPlayer> => {
   return await playerService.getCurrentPlayer(username);
 };
 
@@ -24,10 +24,7 @@ type Authorization = {
 /**
  * Perform the authorization with necessary details
  */
-const authorize = async (
-  jwtToken: string,
-  roleNames: string[] = []
-): Promise<Authorization> => {
+const authorize = async (jwtToken: string, roleNames: string[] = []): Promise<Authorization> => {
   try {
     const jwtDecoded = await authorizationService.verifyToken(jwtToken);
     if (!roleNames.includes(jwtDecoded.user.role.name)) {
@@ -43,7 +40,6 @@ const authorize = async (
       authentication: jwtToken,
     };
   } catch (e) {
-    console.error(e);
     if (e.name && e.name === "AuthenticationError") {
       return { status: "failed", code: "AUTH_ERR_401", message: e.message };
     }
@@ -60,10 +56,10 @@ const authorize = async (
  * Prepare authorization by doing necessary validations for the request and then performs authorization
  */
 const authorizeUser = async (
-  req: AuthenticableRequest,
+  req: IAuthenticableRequest,
   res: Response,
   next: NextFunction,
-  roleNames: string[] = []
+  roleNames: string[] = [],
 ) => {
   const authHeader = req.headers.authorization;
   const jwtToken = authHeader?.split(" ")[1];
@@ -93,22 +89,14 @@ const authorizeUser = async (
 /**
  * Authorize only ADMIN users
  */
-const adminAuthorize = async (
-  req: AuthenticableRequest,
-  res: Response,
-  next: NextFunction
-) => {
+const adminAuthorize = async (req: IAuthenticableRequest, res: Response, next: NextFunction) => {
   await authorizeUser(req, res, next, ["ADMIN"]);
 };
 
 /**
  * Authorize all kinds of users (ADMIN, PLAYER, etc)
  */
-const commonAuthorize = async (
-  req: AuthenticableRequest,
-  res: Response,
-  next: NextFunction
-) => {
+const commonAuthorize = async (req: IAuthenticableRequest, res: Response, next: NextFunction) => {
   await authorizeUser(req, res, next, ["ADMIN", "PLAYER"]);
 };
 
@@ -116,11 +104,7 @@ const commonAuthorize = async (
  * Authorize user to view the details of the team that he/ she belongs to.
  * NOTE: ADMIN user is always allowed.
  */
-const sameTeamAuthorize = async (
-  req: AuthenticableRequest,
-  res: Response,
-  next: NextFunction
-) => {
+const sameTeamAuthorize = async (req: IAuthenticableRequest, res: Response, next: NextFunction) => {
   try {
     const user = req.user;
     const teamId = req.params["teamId"];
@@ -149,7 +133,6 @@ const sameTeamAuthorize = async (
       message: "You are not authorized to perform this action",
     });
   } catch (e) {
-    console.error(e);
     res.status(500).json(toError(e));
   }
 };
@@ -158,15 +141,10 @@ const sameTeamAuthorize = async (
  * Authorize user to update only his/ her own profile details.
  * NOTE: ADMIN user can perform this action by default.
  */
-const samePlayerAuthorize = async (
-  req: AuthenticableRequest,
-  res: Response,
-  next: NextFunction
-) => {
+const samePlayerAuthorize = async (req: IAuthenticableRequest, res: Response, next: NextFunction) => {
   try {
     const user = req.user;
-    const playerId =
-      req.params["playerId"] || req.body["playerId"] || req.body["id"];
+    const playerId = req.params["playerId"] || req.body["playerId"] || req.body["id"];
 
     const currentPlayer = await getCurrentPlayer(user.username);
     const playerInRequest = await playerService.getPlayer(playerId);
@@ -182,7 +160,6 @@ const samePlayerAuthorize = async (
       message: "You are not authorized to perform this action",
     });
   } catch (e) {
-    console.error(e);
     res.status(500).json(toError(e));
   }
 };
@@ -191,11 +168,7 @@ const samePlayerAuthorize = async (
  * Authorize user to view a player details if the player and the authenticated user are in same team.
  * NOTE: ADMIN user is always allowed.
  */
-const currentPlayerTeamAuthorize = async (
-  req: AuthenticableRequest,
-  res: Response,
-  next: NextFunction
-) => {
+const currentPlayerTeamAuthorize = async (req: IAuthenticableRequest, res: Response, next: NextFunction) => {
   try {
     const user = req.user;
     const playerId = req.params["playerId"];
@@ -215,7 +188,6 @@ const currentPlayerTeamAuthorize = async (
       message: "You are not authorized to perform this action",
     });
   } catch (e) {
-    console.error(e);
     res.status(500).json(toError(e));
   }
 };
@@ -223,15 +195,9 @@ const currentPlayerTeamAuthorize = async (
 /**
  * Ensure request body is sent for those requests that supports
  */
-const requestBodyValidator = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+const requestBodyValidator = async (req: Request, res: Response, next: NextFunction) => {
   if (Object.keys(req.body).length === 0) {
-    res
-      .status(400)
-      .json({ status: "failed", message: "Request body is missing" });
+    res.status(400).json({ status: "failed", message: "Request body is missing" });
     return;
   }
   next();
