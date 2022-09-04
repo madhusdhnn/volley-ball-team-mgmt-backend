@@ -1,0 +1,5 @@
+dist/
+*.spec.ts
+.env*
+node_modules/
+.github

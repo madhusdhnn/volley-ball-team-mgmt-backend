@@ -1,25 +1,18 @@
 import { Request, Response, Router } from "express";
 import AuthenticationService from "../services/authentication-service";
-import { AuthenticableRequest, AuthPayload, NewUserData } from "../utils/types";
+import { IAuthenticableRequest, IAuthPayload, INewUserData } from "../utils/types";
 import { AuthenticationError } from "../utils/error-utils";
 import { toError } from "../utils/response-utils";
-import {
-  adminAuthorize,
-  commonAuthorize,
-  requestBodyValidator,
-} from "./authorization";
+import { adminAuthorize, commonAuthorize, requestBodyValidator } from "./authorization";
 
 const authenticationService = new AuthenticationService();
 const router = Router();
 
 const register = async (req: Request, res: Response) => {
   try {
-    const newUser = await authenticationService.register(
-      req.body as NewUserData
-    );
+    const newUser = await authenticationService.register(req.body as INewUserData);
     res.status(201).json({ status: "success", data: newUser });
   } catch (e) {
-    console.error(e);
     if (e.name && e.name === "AuthenticationError") {
       const { errorCode, message } = e as AuthenticationError;
       res.status(409).json(toError(e, errorCode, message));
@@ -31,12 +24,9 @@ const register = async (req: Request, res: Response) => {
 
 const signin = async (req: Request, res: Response) => {
   try {
-    const authentication = await authenticationService.signin(
-      req.body as AuthPayload
-    );
+    const authentication = await authenticationService.signin(req.body as IAuthPayload);
     res.status(200).json(authentication);
-  } catch (e: any) {
-    console.error(e);
+  } catch (e) {
     if (e.name && e.name === "AuthenticationError") {
       const { errorCode, message } = e as AuthenticationError;
       if (errorCode === "AUTH_401") {
@@ -61,7 +51,7 @@ const allUsers = async (_req: Request, res: Response) => {
     res.status(500).json(toError(e));
   }
 };
-const signout = async (req: AuthenticableRequest, res: Response) => {
+const signout = async (req: IAuthenticableRequest, res: Response) => {
   try {
     const jwtToken = req.authentication || "";
     const user = req.user;
@@ -75,7 +65,6 @@ const signout = async (req: AuthenticableRequest, res: Response) => {
 
     res.status(200).json({ status: "success" });
   } catch (e) {
-    console.error(e);
     res.status(500).json(toError(e));
   }
 };

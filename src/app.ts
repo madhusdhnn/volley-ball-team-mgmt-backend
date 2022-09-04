@@ -23,7 +23,7 @@ const createApp = (routers: Router[]) => {
     res.json({
       status: "success",
       message: "Server is running..",
-    })
+    }),
   );
   routers.forEach((router) => app.use(router));
   app.use((req, res) => {
@@ -46,11 +46,5 @@ const app = createApp([PublicRouter, TeamRouter, PlayerRouter, ProfileRouter]);
 
 const authApp = createApp([AuthenticationRouter]);
 
-app.listen(port, () =>
-  console.log(`Server is up and running on http://localhost:${port}`)
-);
-authApp.listen(authPort, () =>
-  console.log(
-    `Authentication Server is up and running on http://localhost:${authPort}`
-  )
-);
+app.listen(port, () => console.log(`Server is up and running on http://localhost:${port}`));
+authApp.listen(authPort, () => console.log(`Authentication Server is up and running on http://localhost:${authPort}`));

@@ -1,18 +1,18 @@
 import { Request } from "express";
 
-export interface Audit {
+export interface IAudit {
   createdAt: Date;
   updatedAt: Date;
 }
 
-export interface Team {
+export interface ITeam {
   id: number;
   name: string;
   maxPlayers: number;
-  audit: Audit;
+  audit: IAudit;
 }
 
-export interface AdditionalInfo {
+export interface IAdditionalInfo {
   age: number;
   height: number;
   weight: number;
@@ -22,19 +22,19 @@ export interface AdditionalInfo {
   favouritePositions: string[];
 }
 
-export interface Player {
+export interface IPlayer {
   id: number;
   name: string;
   username: string;
   initials: string;
   photoUrl?: string;
   shirtNo: number;
-  team: Partial<Team> | null;
-  additionalInfo: Partial<AdditionalInfo>;
-  audit: Audit;
+  team: Partial<ITeam> | null;
+  additionalInfo: Partial<IAdditionalInfo>;
+  audit: IAudit;
 }
 
-export interface AuthenticableRequest extends Request {
+export interface IAuthenticableRequest extends Request {
   authentication?: string;
   user?: any;
   player?: any;
@@ -42,7 +42,7 @@ export interface AuthenticableRequest extends Request {
   logoutAllSessions?: boolean;
 }
 
-export interface UserToken {
+export interface IUserToken {
   id: number;
   username: string;
   secretKey: string;
@@ -50,13 +50,13 @@ export interface UserToken {
   lastUsed: Date;
 }
 
-export interface PlayerUnits {
+export interface IPlayerUnits {
   id: number;
   name: string;
   value: string;
 }
 
-export interface User {
+export interface IUser {
   username: string;
   enabled: boolean;
   firstName: string;
@@ -67,7 +67,7 @@ export interface User {
     id?: number;
     name?: string;
   };
-  audit: Audit;
+  audit: IAudit;
 }
 
 export enum RoleType {
@@ -75,11 +75,11 @@ export enum RoleType {
   PLAYER,
 }
 
-export interface NewTeam {
+export interface INewTeam {
   teamName: string;
 }
 
-export interface NewUserData {
+export interface INewUserData {
   username: string;
   firstName: string;
   lastName: string;
@@ -88,18 +88,18 @@ export interface NewUserData {
   role: RoleType;
 }
 
-export interface Role {
+export interface IRole {
   id: number;
   name: string;
-  audit: Audit;
+  audit: IAudit;
 }
 
-export interface AuthPayload {
+export interface IAuthPayload {
   username: string;
   password: string;
 }
 
-export interface AssignPlayerPayload {
+export interface IAssignPlayerPayload {
   playerIds: number[];
   teamId: number;
 }

@@ -1,15 +1,8 @@
 import db from "../config/db";
 import jwt from "jsonwebtoken";
-import {
-  BcryptPasswordEncoder,
-  generateSecureRandomKey,
-} from "../utils/auth-utils";
-import {
-  IRowMapper,
-  nullableSingleResult,
-  RowMapperResultSetExtractor,
-} from "../utils/db-utils";
-import { User, NewUserData, AuthPayload } from "../utils/types";
+import { BcryptPasswordEncoder, generateSecureRandomKey } from "../utils/auth-utils";
+import { IRowMapper, nullableSingleResult, RowMapperResultSetExtractor } from "../utils/db-utils";
+import { IUser, INewUserData, IAuthPayload } from "../utils/types";
 import { QueryConfig } from "pg";
 import { IUserTokenDao } from "./authorization-service";
 import { AuthenticationError } from "../utils/error-utils";
@@ -29,8 +22,8 @@ interface IUserDao {
   updated_at: Date;
 }
 
-class UserRowMapper implements IRowMapper<IUserDao, User> {
-  mapRow(row: IUserDao, _rowNumber: number): User {
+class UserRowMapper implements IRowMapper<IUserDao, IUser> {
+  mapRow(row: IUserDao, _rowNumber: number): IUser {
     return {
       username: row.username,
       enabled: row.enabled,
@@ -53,23 +46,16 @@ class UserRowMapper implements IRowMapper<IUserDao, User> {
 class AuthenticationService {
   private passwordEncoder: BcryptPasswordEncoder;
   private roleService: RoleService;
-  private userAuthResultSetExtractor: RowMapperResultSetExtractor<
-    IUserDao,
-    User
-  >;
+  private userAuthResultSetExtractor: RowMapperResultSetExtractor<IUserDao, IUser>;
 
   constructor() {
     this.roleService = new RoleService();
     this.passwordEncoder = new BcryptPasswordEncoder();
-    this.userAuthResultSetExtractor = new RowMapperResultSetExtractor<
-      IUserDao,
-      User
-    >(new UserRowMapper());
+    this.userAuthResultSetExtractor = new RowMapperResultSetExtractor<IUserDao, IUser>(new UserRowMapper());
   }
 
-  async register(userData: NewUserData): Promise<User> {
-    const { username, firstName, lastName, password, emailAddress, role } =
-      userData;
+  async register(userData: INewUserData): Promise<IUser> {
+    const { username, firstName, lastName, password, emailAddress, role } = userData;
 
     const theRole = await this.roleService.getByName(role.toString());
     if (!theRole) {
@@ -96,144 +82,115 @@ class AuthenticationService {
     return nullableSingleResult(this.userAuthResultSetExtractor.extract(res));
   }
 
-  async getAllUsers(): Promise<User[]> {
-    try {
-      const res = await db.query<IUserDao>(
-        "SELECT u.*, r.name as role_name FROM users u JOIN roles r ON u.role_id = r.role_id"
-      );
-      return this.userAuthResultSetExtractor.extract(res);
-    } catch (e) {
-      throw e;
-    }
+  async getAllUsers(): Promise<IUser[]> {
+    const res = await db.query<IUserDao>(
+      "SELECT u.*, r.name as role_name FROM users u JOIN roles r ON u.role_id = r.role_id",
+    );
+    return this.userAuthResultSetExtractor.extract(res);
   }
 
-  async signin(payload: AuthPayload) {
-    try {
-      let sql: QueryConfig = {
-        text: `
-          SELECT u.*, r.name AS role_name 
-          FROM users u 
-          JOIN roles r 
-            ON u.role_id = r.role_id 
-          WHERE u.username = $1`,
-        values: [payload.username],
-      };
-      const res = await db.query<IUserDao>(sql);
-      const user: User = nullableSingleResult(
-        this.userAuthResultSetExtractor.extract(res)
-      );
+  async signin(payload: IAuthPayload) {
+    let sql: QueryConfig = {
+      text: `
+        SELECT u.*, r.name AS role_name 
+        FROM users u 
+        JOIN roles r 
+          ON u.role_id = r.role_id 
+        WHERE u.username = $1`,
+      values: [payload.username],
+    };
+    const res = await db.query<IUserDao>(sql);
+    const user: IUser = nullableSingleResult(this.userAuthResultSetExtractor.extract(res));
 
-      if (!user) {
-        throw new AuthenticationError(
-          "AUTH_401",
-          "Username and password does not match"
-        );
-      }
-
-      if (!user.enabled) {
-        throw new AuthenticationError("AUTH_403", "User disabled");
-      }
-
-      const password = payload.password;
-      const savedPassword = res.rows[0].password;
-      const isSame = this.passwordEncoder.matches(password, savedPassword);
-
-      if (!isSame) {
-        throw new AuthenticationError("AUTH_401", "Password is wrong");
-      }
-
-      const {
-        username,
-        enabled,
-        firstName,
-        lastName,
-        role,
-        profileImageUrl,
-        emailAddress: email,
-      } = user;
-
-      const secretKey = generateSecureRandomKey();
-
-      const userTokenData = {
-        username,
-        enabled,
-        firstName,
-        lastName,
-        fullName: firstName + " " + lastName,
-        role,
-        profileImageUrl,
-        email,
-      };
-
-      let token = jwt.sign({ user: { ...userTokenData } }, secretKey, {
-        expiresIn: process.env.AUTH_TOKEN_EXPIRY,
-        issuer: process.env.ISSUER,
-        subject: userTokenData.username,
-      });
-
-      sql = {
-        text: `INSERT INTO user_tokens (username, secret_key, token, last_used) VALUES ($1, $2, $3, now())`,
-        values: [username, secretKey, token],
-      };
-      await db.query<IUserTokenDao>(sql);
-
-      return {
-        status: "success",
-        data: {
-          accessToken: token,
-          expiresIn: 3600,
-          user: { ...userTokenData },
-        },
-      };
-    } catch (e) {
-      throw e;
+    if (!user) {
+      throw new AuthenticationError("AUTH_401", "Username and password does not match");
     }
+
+    if (!user.enabled) {
+      throw new AuthenticationError("AUTH_403", "IUser disabled");
+    }
+
+    const password = payload.password;
+    const savedPassword = res.rows[0].password;
+    const isSame = this.passwordEncoder.matches(password, savedPassword);
+
+    if (!isSame) {
+      throw new AuthenticationError("AUTH_401", "Password is wrong");
+    }
+
+    const { username, enabled, firstName, lastName, role, profileImageUrl, emailAddress: email } = user;
+
+    const secretKey = generateSecureRandomKey();
+
+    const userTokenData = {
+      username,
+      enabled,
+      firstName,
+      lastName,
+      fullName: firstName + " " + lastName,
+      role,
+      profileImageUrl,
+      email,
+    };
+
+    const token = jwt.sign({ user: { ...userTokenData } }, secretKey, {
+      expiresIn: process.env.AUTH_TOKEN_EXPIRY,
+      issuer: process.env.ISSUER,
+      subject: userTokenData.username,
+    });
+
+    sql = {
+      text: `INSERT INTO user_tokens (username, secret_key, token, last_used) VALUES ($1, $2, $3, now())`,
+      values: [username, secretKey, token],
+    };
+    await db.query<IUserTokenDao>(sql);
+
+    return {
+      status: "success",
+      data: {
+        accessToken: token,
+        expiresIn: 3600,
+        user: { ...userTokenData },
+      },
+    };
   }
 
   async signout(username: string, jwtToken: string): Promise<void> {
-    try {
-      const sql: QueryConfig = {
-        text: `DELETE FROM user_tokens WHERE username = $1 AND token = $2`,
-        values: [username, jwtToken],
-      };
-      await db.query<IUserTokenDao>(sql);
-    } catch (e) {
-      throw e;
-    }
+    const sql: QueryConfig = {
+      text: `DELETE FROM user_tokens WHERE username = $1 AND token = $2`,
+      values: [username, jwtToken],
+    };
+    await db.query<IUserTokenDao>(sql);
   }
 
   async signoutAllSessions(username: string): Promise<void> {
-    try {
-      await db.query(`DELETE FROM user_tokens WHERE username = $1`, [username]);
-    } catch (e) {
-      throw e;
-    }
+    await db.query(`DELETE FROM user_tokens WHERE username = $1`, [username]);
   }
 
   public async isUsernameExists(username: string): Promise<boolean> {
-    try {
-      const sql: QueryConfig = {
-        text: "SELECT username FROM users WHERE username = $1",
-        values: [username],
-      };
-      const res = await db.query(sql);
-      return res.rows.length === 1;
-    } catch (e) {
-      throw e;
+    if (!username) {
+      throw new Error("Username field is empty or null");
     }
+
+    const sql: QueryConfig = {
+      text: "SELECT username FROM users WHERE username = $1",
+      values: [username],
+    };
+    const res = await db.query(sql);
+    return res.rows.length === 1;
   }
 
   public async isEmailExists(emailAddress: string): Promise<boolean> {
-    try {
-      const sql: QueryConfig = {
-        text: "SELECT email_id FROM users WHERE email_id = $1",
-        values: [emailAddress],
-      };
-      const res = await db.query(sql);
-      return res.rows.length === 1;
-    } catch (e) {
-      throw e;
+    if (!emailAddress) {
+      throw new Error("Username field is empty or null");
     }
+
+    const sql: QueryConfig = {
+      text: "SELECT email_id FROM users WHERE email_id = $1",
+      values: [emailAddress],
+    };
+    const res = await db.query(sql);
+    return res.rows.length === 1;
   }
 }
 

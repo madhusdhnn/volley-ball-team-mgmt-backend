@@ -1,16 +1,9 @@
 import { QueryConfig } from "pg";
 import db from "../config/db";
-import { Player, PlayerUnits } from "../utils/types";
-import {
-  IRowMapper,
-  nullableSingleResult,
-  RowMapperResultSetExtractor,
-} from "../utils/db-utils";
+import { IPlayer, IPlayerUnits } from "../utils/types";
+import { IRowMapper, nullableSingleResult, RowMapperResultSetExtractor } from "../utils/db-utils";
 import AuthenticationService from "./authentication-service";
-import {
-  AuthenticationError,
-  IllegalArgumentError,
-} from "../utils/error-utils";
+import { AuthenticationError, IllegalArgumentError } from "../utils/error-utils";
 
 interface IPlayerDao {
   player_id: number;
@@ -36,22 +29,19 @@ interface IPlayerUnitsDao {
   value: string;
 }
 
-class PlayerRowMapper implements IRowMapper<IPlayerDao, Player> {
+class PlayerRowMapper implements IRowMapper<IPlayerDao, IPlayer> {
   private parseInitials(name: string): string {
     if (!name) {
       return "";
     }
 
     const [firstName, lastName] = name.split(" ");
-    const initials =
-      firstName.substring(0, 1) +
-      "" +
-      (lastName ? lastName.substring(0, 1) : "");
+    const initials = firstName.substring(0, 1) + "" + (lastName ? lastName.substring(0, 1) : "");
 
     return initials;
   }
 
-  mapRow(row: IPlayerDao, _rowNumber: number): Player {
+  mapRow(row: IPlayerDao, _rowNumber: number): IPlayer {
     const initials = this.parseInitials(row.name);
 
     const additionalInfo = {
@@ -61,9 +51,7 @@ class PlayerRowMapper implements IRowMapper<IPlayerDao, Player> {
       power: row.power,
       speed: row.speed,
       location: row.location,
-      favouritePositions: row.favourite_positions
-        ? row.favourite_positions.split(",")
-        : [],
+      favouritePositions: row.favourite_positions ? row.favourite_positions.split(",") : [],
     };
 
     const audit = {
@@ -93,8 +81,8 @@ class PlayerRowMapper implements IRowMapper<IPlayerDao, Player> {
   }
 }
 
-class PlayerUnitsRowMapper implements IRowMapper<IPlayerUnitsDao, PlayerUnits> {
-  mapRow(row: IPlayerUnitsDao, _rowNumber: number): PlayerUnits {
+class PlayerUnitsRowMapper implements IRowMapper<IPlayerUnitsDao, IPlayerUnits> {
+  mapRow(row: IPlayerUnitsDao, _rowNumber: number): IPlayerUnits {
     return {
       id: row.id,
       name: row.name,
@@ -105,192 +93,136 @@ class PlayerUnitsRowMapper implements IRowMapper<IPlayerUnitsDao, PlayerUnits> {
 
 class PlayerService {
   private authService: AuthenticationService;
-  private readonly playerResultSetExtractor: RowMapperResultSetExtractor<
-    IPlayerDao,
-    Player
-  >;
+  private readonly playerResultSetExtractor: RowMapperResultSetExtractor<IPlayerDao, IPlayer>;
 
-  private readonly playerUnitsResultSetExtractor: RowMapperResultSetExtractor<
-    IPlayerUnitsDao,
-    PlayerUnits
-  >;
+  private readonly playerUnitsResultSetExtractor: RowMapperResultSetExtractor<IPlayerUnitsDao, IPlayerUnits>;
 
   constructor() {
     this.authService = new AuthenticationService();
-    this.playerResultSetExtractor = new RowMapperResultSetExtractor<
-      IPlayerDao,
-      Player
-    >(new PlayerRowMapper());
+    this.playerResultSetExtractor = new RowMapperResultSetExtractor<IPlayerDao, IPlayer>(new PlayerRowMapper());
 
-    this.playerUnitsResultSetExtractor = new RowMapperResultSetExtractor<
-      IPlayerUnitsDao,
-      PlayerUnits
-    >(new PlayerUnitsRowMapper());
+    this.playerUnitsResultSetExtractor = new RowMapperResultSetExtractor<IPlayerUnitsDao, IPlayerUnits>(
+      new PlayerUnitsRowMapper(),
+    );
   }
 
-  async getPlayer(playerId: number): Promise<Player> {
-    try {
-      const sql: QueryConfig = {
-        text: `
-        SELECT p.*, t.name AS team_name 
-        FROM players p 
-        LEFT JOIN teams t 
-          ON p.team_id = t.team_id 
-        WHERE p.player_id = $1`,
-        values: [playerId],
-      };
+  async getPlayer(playerId: number): Promise<IPlayer> {
+    const sql: QueryConfig = {
+      text: `
+      SELECT p.*, t.name AS team_name 
+      FROM players p 
+      LEFT JOIN teams t 
+        ON p.team_id = t.team_id 
+      WHERE p.player_id = $1`,
+      values: [playerId],
+    };
 
-      const res = await db.query<IPlayerDao>(sql);
-      return nullableSingleResult(this.playerResultSetExtractor.extract(res));
-    } catch (e) {
-      throw e;
-    }
+    const res = await db.query<IPlayerDao>(sql);
+    return nullableSingleResult(this.playerResultSetExtractor.extract(res));
   }
 
-  async getAllPlayers(): Promise<Player[]> {
-    try {
-      const sql = `
+  async getAllPlayers(): Promise<IPlayer[]> {
+    const sql = `
       SELECT p.*, t.name AS team_name 
       FROM players p 
       LEFT JOIN teams t 
         ON p.team_id = t.team_id`;
-      const res = await db.query<IPlayerDao>(sql);
-      return this.playerResultSetExtractor.extract(res);
-    } catch (e) {
-      throw e;
-    }
+    const res = await db.query<IPlayerDao>(sql);
+    return this.playerResultSetExtractor.extract(res);
   }
 
-  async getAllPlayersInTeam(teamId: number): Promise<Player[]> {
-    try {
-      const sql: QueryConfig = {
-        text: `
-        SELECT p.*, t.name AS team_name 
-        FROM players p 
-        JOIN teams t 
-          ON p.team_id = t.team_id 
-        WHERE p.team_id = $1`,
-        values: [teamId],
-      };
-      const res = await db.query<IPlayerDao>(sql);
-      return this.playerResultSetExtractor.extract(res);
-    } catch (e) {
-      throw e;
-    }
+  async getAllPlayersInTeam(teamId: number): Promise<IPlayer[]> {
+    const sql: QueryConfig = {
+      text: `
+      SELECT p.*, t.name AS team_name 
+      FROM players p 
+      JOIN teams t 
+        ON p.team_id = t.team_id 
+      WHERE p.team_id = $1`,
+      values: [teamId],
+    };
+    const res = await db.query<IPlayerDao>(sql);
+    return this.playerResultSetExtractor.extract(res);
   }
 
-  async createPlayer(player: Partial<Player>): Promise<Player> {
-    try {
-      const isUserRegistered = await this.authService.isUsernameExists(
-        player.username!
-      );
+  async createPlayer(player: Partial<IPlayer>): Promise<IPlayer> {
+    const isUserRegistered = await this.authService.isUsernameExists(player.username || "");
 
-      if (!isUserRegistered) {
-        throw new AuthenticationError("ACC_PLAYER_400", "User not registered");
-      }
-
-      const sql: QueryConfig = {
-        text: "INSERT INTO players (username, name, shirt_no, created_at, updated_at) VALUES ($1, $2, $3, now(), now()) RETURNING *",
-        values: [player.username, player.name, player.shirtNo],
-      };
-      const res = await db.query<IPlayerDao>(sql);
-      return nullableSingleResult(this.playerResultSetExtractor.extract(res));
-    } catch (e) {
-      throw e;
+    if (!isUserRegistered) {
+      throw new AuthenticationError("ACC_PLAYER_400", "User not registered");
     }
+
+    const sql: QueryConfig = {
+      text: "INSERT INTO players (username, name, shirt_no, created_at, updated_at) VALUES ($1, $2, $3, now(), now()) RETURNING *",
+      values: [player.username, player.name, player.shirtNo],
+    };
+    const res = await db.query<IPlayerDao>(sql);
+    return nullableSingleResult(this.playerResultSetExtractor.extract(res));
   }
 
-  async getPlayerUnits(): Promise<PlayerUnits[]> {
-    try {
-      const res = await db.query<IPlayerUnitsDao>("SELECT * FROM player_units");
-      return this.playerUnitsResultSetExtractor.extract(res);
-    } catch (e) {
-      throw e;
-    }
+  async getPlayerUnits(): Promise<IPlayerUnits[]> {
+    const res = await db.query<IPlayerUnitsDao>("SELECT * FROM player_units");
+    return this.playerUnitsResultSetExtractor.extract(res);
   }
 
-  async updatePlayer(player: Player): Promise<void> {
-    try {
-      const dbFields: Partial<IPlayerDao> = this.mapToDbFields(player);
-      const fieldsToUpdate: string = Object.entries(dbFields)
-        .map((entry) => `${entry[0]} = ${entry[1]}`)
-        .join(", ");
+  async updatePlayer(player: IPlayer): Promise<void> {
+    const dbFields: Partial<IPlayerDao> = this.mapToDbFields(player);
+    const fieldsToUpdate: string = Object.entries(dbFields)
+      .map((entry) => `${entry[0]} = ${entry[1]}`)
+      .join(", ");
 
-      const sql: QueryConfig = {
-        text: `UPDATE players SET ${fieldsToUpdate}, updated_at = now() WHERE player_id = $1`,
-        values: [player.id],
-      };
-      await db.query(sql);
-    } catch (e) {
-      throw e;
-    }
+    const sql: QueryConfig = {
+      text: `UPDATE players SET ${fieldsToUpdate}, updated_at = now() WHERE player_id = $1`,
+      values: [player.id],
+    };
+    await db.query(sql);
   }
 
   async deletePlayer(playerId: number): Promise<void> {
-    try {
-      const sql: QueryConfig = {
-        text: "DELETE FROM players WHERE player_id = $1",
-        values: [playerId],
-      };
-      await db.query(sql);
-    } catch (e) {
-      throw e;
-    }
+    const sql: QueryConfig = {
+      text: "DELETE FROM players WHERE player_id = $1",
+      values: [playerId],
+    };
+    await db.query(sql);
   }
 
-  async getAllPlayersNotInTeam(): Promise<Player[]> {
-    try {
-      const sql = `SELECT p.*, NULL AS team_name FROM players p WHERE p.team_id IS NULL`;
-      const res = await db.query<IPlayerDao>(sql);
-      return this.playerResultSetExtractor.extract(res);
-    } catch (e) {
-      throw e;
-    }
+  async getAllPlayersNotInTeam(): Promise<IPlayer[]> {
+    const sql = `SELECT p.*, NULL AS team_name FROM players p WHERE p.team_id IS NULL`;
+    const res = await db.query<IPlayerDao>(sql);
+    return this.playerResultSetExtractor.extract(res);
   }
 
   async isTeamFull(teamId: number): Promise<boolean> {
-    try {
-      const sql: QueryConfig = {
-        text: "SELECT (count(*) >= 6) AS is_full FROM players WHERE team_id = $1",
-        values: [teamId],
-      };
-      const res = await db.query<{ is_full: boolean }>(sql);
-      const row = res.rows[0];
+    const sql: QueryConfig = {
+      text: "SELECT (count(*) >= 6) AS is_full FROM players WHERE team_id = $1",
+      values: [teamId],
+    };
+    const res = await db.query<{ is_full: boolean }>(sql);
+    const row = res.rows[0];
 
-      return !!row?.is_full;
-    } catch (e) {
-      throw e;
-    }
+    return !!row?.is_full;
   }
 
   async unassignFromTeam(playerId: number): Promise<void> {
-    try {
-      const sql: QueryConfig = {
-        text: "UPDATE players SET team_id = NULL WHERE player_id = $1",
-        values: [playerId],
-      };
-      await db.query(sql);
-    } catch (e) {
-      throw e;
-    }
+    const sql: QueryConfig = {
+      text: "UPDATE players SET team_id = NULL WHERE player_id = $1",
+      values: [playerId],
+    };
+    await db.query(sql);
   }
 
-  async getCurrentPlayer(username: string): Promise<Player> {
-    try {
-      const sql: QueryConfig = {
-        text: `
-        SELECT p.*, t.name AS team_name 
-        FROM players p 
-        LEFT JOIN teams t 
-          ON p.team_id = t.team_id 
-        WHERE p.username = $1`,
-        values: [username],
-      };
-      const res = await db.query<IPlayerDao>(sql);
-      return nullableSingleResult(this.playerResultSetExtractor.extract(res));
-    } catch (e) {
-      throw e;
-    }
+  async getCurrentPlayer(username: string): Promise<IPlayer> {
+    const sql: QueryConfig = {
+      text: `
+      SELECT p.*, t.name AS team_name 
+      FROM players p 
+      LEFT JOIN teams t 
+        ON p.team_id = t.team_id 
+      WHERE p.username = $1`,
+      values: [username],
+    };
+    const res = await db.query<IPlayerDao>(sql);
+    return nullableSingleResult(this.playerResultSetExtractor.extract(res));
   }
 
   async assignToTeam(playerIds: number[] = [], teamId: number): Promise<void> {
@@ -312,36 +244,28 @@ class PlayerService {
 
       if (res.rowCount !== playerIds.length) {
         await dbClient.query("ROLLBACK");
-        throw new IllegalArgumentError(
-          "Some of the players in input does not exist!"
-        );
+        throw new IllegalArgumentError("Some of the players in input does not exist!");
       }
       await dbClient.query("COMMIT");
-    } catch (e) {
-      throw e;
     } finally {
       dbClient.release();
     }
   }
 
   async transferToTeam(toTeamId: number, playerId: number): Promise<void> {
-    try {
-      const isTeamFull = await this.isTeamFull(toTeamId);
-      if (isTeamFull) {
-        throw new Error("Team is already full");
-      }
-
-      const sql: QueryConfig = {
-        text: "UPDATE players SET team_id = $1 WHERE player_id = $2",
-        values: [toTeamId, playerId],
-      };
-      await db.query(sql);
-    } catch (e) {
-      throw e;
+    const isTeamFull = await this.isTeamFull(toTeamId);
+    if (isTeamFull) {
+      throw new Error("Team is already full");
     }
+
+    const sql: QueryConfig = {
+      text: "UPDATE players SET team_id = $1 WHERE player_id = $2",
+      values: [toTeamId, playerId],
+    };
+    await db.query(sql);
   }
 
-  private mapToDbFields = (player: Partial<Player>): Partial<IPlayerDao> => {
+  private mapToDbFields = (player: Partial<IPlayer>): Partial<IPlayerDao> => {
     const fields: Partial<IPlayerDao> = {};
 
     if (!player) {
@@ -379,12 +303,11 @@ class PlayerService {
     }
 
     if (additionalInfo?.favouritePositions) {
-      fields["favourite_positions"] =
-        additionalInfo.favouritePositions.join(",");
+      fields["favourite_positions"] = additionalInfo.favouritePositions.join(",");
     }
 
     if (additionalInfo?.location) {
-      fields["location"] = `\'${additionalInfo.location}\'`;
+      fields["location"] = `'${additionalInfo.location}'`;
     }
 
     return Object.freeze(fields);

@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import { IllegalArgumentError } from "./error-utils";
 import crypto from "crypto";
 
-const BCRYPT_PATTERN = new RegExp(/\$2([ayb])?\$(\d\d)\$[.\/0-9A-Za-z]{53}/);
+const BCRYPT_PATTERN = new RegExp(/\$2([ayb])?\$(\d\d)\$[./0-9A-Za-z]{53}/);
 
 class BcryptPasswordEncoder {
   encode(rawPassword: string) {
