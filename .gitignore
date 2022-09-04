@@ -1,6 +1,11 @@
 node_modules/
 .idea/
 dist/
+lib/
 
 *.iml
 *.log
+.env
+.env.development
+.env.test
+.env.production

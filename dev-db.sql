@@ -32,6 +32,9 @@ CREATE TABLE users
 ALTER TABLE ONLY users
     ADD CONSTRAINT user_role_id_fk FOREIGN KEY (role_id) REFERENCES roles (role_id);
 
+ALTER TABLE ONLY users
+    ADD CONSTRAINT email_unique UNIQUE (email_id);
+
 CREATE INDEX user_role_id_fk_idx ON users (role_id);
 
 INSERT INTO users (username, password, enabled, first_name, last_name, role_id, created_at, updated_at)
@@ -112,6 +115,7 @@ CREATE TABLE players
     weight              numeric(5, 2),
     power               integer,
     speed               integer,
+    location            text,
     favourite_positions text,
     created_at          timestamp with time zone NOT NULL,
     updated_at          timestamp with time zone NOT NULL
@@ -127,24 +131,24 @@ CREATE INDEX player_team_id_fk_idx ON players (team_id);
 
 CREATE INDEX player_username_fk_idx ON players (username);
 
-INSERT INTO players (username, team_id, name, shirt_no, age, height, weight, power, speed, favourite_positions,
+INSERT INTO players (username, team_id, name, shirt_no, age, height, weight, power, speed, location, favourite_positions,
                      created_at,
                      updated_at)
-VALUES ('rGeller', 2, 'Ross Geller', 3, null, null, null, null, null, null, '2022-01-08 06:17:39.397000',
+VALUES ('rGeller', 2, 'Ross Geller', 3, null, null, null, null, null, null, null, '2022-01-08 06:17:39.397000',
         '2022-01-08 06:17:41.791000'),
-       ('rGreen', 1, 'Rachel Green', 5, null, null, null, null, null, null, '2022-01-08 06:18:19.932000',
+       ('rGreen', 1, 'Rachel Green', 5, null, null, null, null, null, null, null, '2022-01-08 06:18:19.932000',
         '2022-01-08 06:18:21.554000'),
-       ('cBing', 2, 'Chandler Bing', 2, null, null, null, null, null, null, '2022-01-08 06:17:12.398000',
+       ('cBing', 2, 'Chandler Bing', 2, null, null, null, null, null, null, null, '2022-01-08 06:17:12.398000',
         '2022-01-08 06:17:10.256000'),
-       ('mGeller', 1, 'Monica Geller', 4, null, null, null, null, null, null, '2022-01-08 06:17:53.104000',
+       ('mGeller', 1, 'Monica Geller', 4, null, null, null, null, null, null, null, '2022-01-08 06:17:53.104000',
         '2022-01-08 06:17:50.599000'),
-       ('pBuffay', 1, 'Phoebe Buffay', 6, null, null, null, null, null, null, '2022-01-08 06:18:23.044000',
+       ('pBuffay', 1, 'Phoebe Buffay', 6, null, null, null, null, null, null, null, '2022-01-08 06:18:23.044000',
         '2022-01-08 06:18:23.949000'),
-       ('jTribbianni', 2, 'Joey Tribbianni', 1, null, null, null, null, null, null, '2022-01-08 06:16:57.303000',
+       ('jTribbianni', 2, 'Joey Tribbianni', 1, null, null, null, null, null, null, null, '2022-01-08 06:16:57.303000',
         '2022-01-08 06:17:01.676000'),
-       ('gunther', null, 'Gunther', 7, null, null, null, null, null, null, '2022-02-11 11:04:42.365',
+       ('gunther', null, 'Gunther', 7, null, null, null, null, null, null, null, '2022-02-11 11:04:42.365',
         '2022-02-11 11:04:42.365'),
-       ('jHosenstein', null, 'Janice Hosenstein', 8, null, null, null, null, null, null, '2022-02-11 11:04:42.365',
+       ('jHosenstein', null, 'Janice Hosenstein', 8, null, null, null, null, null, null, null, '2022-02-11 11:04:42.365',
         '2022-02-11 11:04:42.365'),
-       ('rBurk', null, 'Richard Burk', 9, null, null, null, null, null, null, '2022-02-11 11:04:42.365',
+       ('rBurk', null, 'Richard Burk', 9, null, null, null, null, null, null, null, '2022-02-11 11:04:42.365',
         '2022-02-11 11:04:42.365');

@@ -1,15 +1,17 @@
-import { Router } from "express";
+import { Request, Response, Router } from "express";
 import { toError } from "../utils/response-utils";
 
 const router = Router();
 
-const responseCodes = {
+const responseCodes = Object.freeze({
   clientErrors: {
     unAuthorized: [
       "AUTH_401",
       "AUTH_ERR_401",
       "AUTH_EXP_401",
       "AUTH_REFRESH_ERR_401",
+      "AUTH_ROLE_401",
+      "AUTH_PLAYER_401",
       "ACC_401",
     ],
     badRequest: ["ACC_TEAM_400", "ACC_PLAYER_400"],
@@ -17,9 +19,9 @@ const responseCodes = {
     notFound: ["AUTH_TEAM_404", "ROLE_ERR_404"],
   },
   serverErrors: ["ERR_500"],
-};
+});
 
-const getResponseCodes = async (req, res) => {
+const getResponseCodes = async (_req: Request, res: Response) => {
   try {
     res.status(200).json({ status: "success", data: responseCodes });
   } catch (e) {
@@ -28,6 +30,6 @@ const getResponseCodes = async (req, res) => {
   }
 };
 
-router.get("/vbms/api/v1/supported-response-codes", getResponseCodes);
+router.get("/vtms/api/v1/supported-response-codes", getResponseCodes);
 
 export default router;

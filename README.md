@@ -6,12 +6,14 @@ This project is built with NodeJS and the database is PostgreSQL.
 
 This service runs in two ports - One for the APIs and the other for Authentication and Authorization. This way we mimic API server and Auth server.
 
-ES6 is setup with `Babel Node`.
+* TypeScript is supported
+* Babel is used for compilation. Typescript checks for types only. Refer `build` script in `package.json`
 
 ## Development Server
 
-- Run `setup-dev-db.sh` file to setup a database with some data to get started.
-- Run `npm run dev` for dev server. It starts in ports `5001` (for API) and `5002` (for Auth). It has `nodemon` which will help reload automatically upon changing any source files
+* Generate your own `.env` file, from `.env.example` appending the `NODE_ENV` as file name at the end. Eg: `.env.development`
+* Run `setup-dev-db.sh` file to spin up a database and seed it
+* Run `npm run dev` for dev server. It starts in ports `5001` (for API) and `5002` (for Auth). It has `nodemon` which will help reload automatically upon changing any source files
 
 ## Build
 
