@@ -20,7 +20,7 @@ Follow the below steps to setup the Development environment.
     - Generate your own `.env` file from `.env.example` adding `NODE_ENV` as suffix to the file name. Eg: `.env.development`
     - For Non-development environments like Production, the env vars are taken care in the deployment server level
 2. Knex JS:
-    - Use `knex:dev` npm script to run Knex based commands. Eg: `npm run knex:dev migrate:[make:up|down|latest|rollback|status]`
+    - Use `knex:dev` npm script to run Knex based commands. Eg: `yarn knex:dev migrate:[make:up|down|latest|rollback|status]`
     - Or use separate `knex:seed` and `knex:migrate` commands
     - Make sure to add `-x ts` flag at the end of any command that generates TS file; for eg: `migrate`
 3. Database setup:
@@ -29,10 +29,10 @@ Follow the below steps to setup the Development environment.
     - Use `lint` and `format` npm commands to fix errors and format the code
     - If you use VSCode, you may enable `Format on Save` option in Settings to automatically format the code with our Prettier configuration
 5. Application:  
-    - Run `npm run dev` command to start the application in development mode
+    - Run `yarn dev` command to start the application in development mode
     - It will run in two ports - `5001` (for API) and `5002` (for Auth). The script uses `nodemon` which will reload automatically upon changing any source files
 
 ## Build
 
-- Run `npm run build` command to generate non-development build
-- Run `npm start` command to start the server
+- Run `yarn build` command to generate non-development build
+- Run `yarn start` command to start the server

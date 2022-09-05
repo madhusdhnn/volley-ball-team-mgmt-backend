@@ -12,12 +12,12 @@
     "knex:dev": "cross-env NODE_ENV=development knex",
     "knex:seed": "knex seed:run --knexfile src/knexfile.ts",
     "knex:migrate": "knex migrate:latest --knexfile src/knexfile.ts",
-    "db:dev": "cross-env NODE_ENV=development npm run knex:migrate && npm run knex:seed",
+    "db:dev": "cross-env NODE_ENV=development yarn knex:migrate && yarn knex:seed",
     "build-js": "babel src --extensions \".ts\" -d dist",
-    "build": "npm run clean && npm run lint && npm run type-check && npm run build-js",
-    "dev:prestart": "npm run lint && npm run type-check",
+    "build": "yarn clean && yarn lint && yarn type-check && yarn build-js",
+    "dev:prestart": "yarn lint && yarn type-check",
     "dev": "cross-env NODE_ENV=development nodemon src/app.ts",
-    "start": "cross-env NODE_ENV=production ISSUER=VTMSAuthService AUTH_TOKEN_EXPIRY=1h DB_USER=postgres DB_HOST=localhost DB_NAME=volley_team_mgmt_dev DB_PASSWORD= node dist/app.js"
+    "start": "node dist/app.js"
   },
   "keywords": [
     "volley",
