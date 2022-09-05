@@ -4,6 +4,7 @@ import PlayerService from "../services/player-service";
 import TeamsService from "../services/teams-service";
 import { IAuthenticableRequest, IPlayer } from "../utils/types";
 import { toError } from "../utils/response-utils";
+import { DatabaseError } from "pg";
 
 const authorizationService = new AuthorizationService();
 const teamService = new TeamsService();
@@ -147,7 +148,7 @@ const samePlayerAuthorize = async (req: IAuthenticableRequest, res: Response, ne
     const playerId = req.params["playerId"] || req.body["playerId"] || req.body["id"];
 
     const currentPlayer = await getCurrentPlayer(user.username);
-    const playerInRequest = await playerService.getPlayer(playerId);
+    const playerInRequest = await playerService.getPlayer(parseInt(playerId));
 
     if (req.isAdmin || currentPlayer.id === playerInRequest.id) {
       req.player = currentPlayer;
@@ -160,6 +161,9 @@ const samePlayerAuthorize = async (req: IAuthenticableRequest, res: Response, ne
       message: "You are not authorized to perform this action",
     });
   } catch (e) {
+    console.log(JSON.stringify(e));
+    console.log(JSON.stringify(e instanceof DatabaseError ? (e as DatabaseError) : "{}"));
+
     res.status(500).json(toError(e));
   }
 };

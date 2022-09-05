@@ -1,17 +1,10 @@
 import jwt from "jsonwebtoken";
-import { QueryConfig } from "pg";
 import db from "../config/db";
 import { IUserToken } from "../utils/types";
+import { IUserTokenDao } from "../utils/dao";
+
 import { IRowMapper, nullableSingleResult, RowMapperResultSetExtractor } from "../utils/db-utils";
 import { AuthenticationError } from "../utils/error-utils";
-
-export interface IUserTokenDao {
-  id: number;
-  username: string;
-  secret_key: string;
-  token: string;
-  last_used: Date;
-}
 
 class UserTokenRowMapper implements IRowMapper<IUserTokenDao, IUserToken> {
   mapRow(row: IUserTokenDao): IUserToken {
@@ -37,11 +30,7 @@ class AuthorizationService {
       throw new AuthenticationError("AUTH_ERR_401", "Auth token not found in the request");
     }
 
-    const sql: QueryConfig = {
-      text: `SELECT * FROM user_tokens WHERE token = $1`,
-      values: [jwtToken],
-    };
-    const res = await db.query<IUserTokenDao>(sql);
+    const res = await db<IUserTokenDao>("user_tokens").select("*").where("token", "=", jwtToken);
     const userToken = nullableSingleResult(this.authResultSetExtractor.extract(res));
 
     if (!userToken) {

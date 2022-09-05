@@ -39,10 +39,12 @@ export async function up(knex: Knex): Promise<void> {
     ALTER TABLE ONLY ${playersTable}
       ADD CONSTRAINT player_username_fk FOREIGN KEY (username) REFERENCES ${usersTable} (username);
 
+      ALTER TABLE ONLY ${playersTable} ADD CONSTRAINT player_username_unique UNIQUE (username);
+
     CREATE INDEX player_team_id_fk_idx ON ${playersTable} (team_id);
 
     CREATE INDEX player_username_fk_idx ON ${playersTable} (username);
-    `
+    `,
   );
 }
 

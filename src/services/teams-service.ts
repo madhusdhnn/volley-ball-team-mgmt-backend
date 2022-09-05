@@ -1,15 +1,7 @@
-import { QueryConfig } from "pg";
 import db from "../config/db";
 import { INewTeam, ITeam } from "../utils/types";
+import { ITeamDao } from "../utils/dao";
 import { IRowMapper, nullableSingleResult, RowMapperResultSetExtractor } from "../utils/db-utils";
-
-interface ITeamDao {
-  team_id: number;
-  name: string;
-  max_players: number;
-  created_at: Date;
-  updated_at: Date;
-}
 
 class TeamRowMapper implements IRowMapper<ITeamDao, ITeam> {
   mapRow(row: ITeamDao, _rowNumber: number): ITeam {
@@ -35,47 +27,40 @@ class TeamsService {
   }
 
   async getAllTeams(): Promise<ITeam[]> {
-    const res = await db.query<ITeamDao>("SELECT * FROM teams");
+    const res = await db<ITeamDao>("teams").select("*");
     return this.teamRSE.extract(res);
   }
 
   async getTeam(teamId: number): Promise<ITeam> {
-    const sql: QueryConfig = {
-      text: "SELECT * FROM teams WHERE team_id = $1",
-      values: [teamId],
-    };
-    const res = await db.query<ITeamDao>(sql);
+    const res = await db<ITeamDao>("teams").select("*").where("team_id", "=", teamId);
     return nullableSingleResult(this.teamRSE.extract(res));
   }
 
   async createTeam(payload: INewTeam): Promise<ITeam> {
     const { teamName } = payload;
-
     const teamNameFormatted = teamName.substring(0, 1).toUpperCase() + teamName.substring(1);
 
-    const sql: QueryConfig = {
-      text: "INSERT INTO teams (name, max_players, created_at, updated_at) VALUES ($1, $2, now(), now()) RETURNING *",
-      values: [teamNameFormatted, TeamsService.MAX_PLAYERS],
+    const nowTime = db.fn.now();
+    const teamData = {
+      name: teamNameFormatted,
+      max_players: TeamsService.MAX_PLAYERS,
+      created_at: nowTime,
+      updated_at: nowTime,
     };
 
-    const data = await db.query<ITeamDao>(sql);
-    return nullableSingleResult(this.teamRSE.extract(data));
+    const res = await db<ITeamDao>("teams").insert(teamData, "*");
+    return nullableSingleResult(this.teamRSE.extract(res));
   }
 
   async updateTeam(teamId: number, teamName: string): Promise<void> {
-    const sql: QueryConfig = {
-      text: "UPDATE teams SET name = $1, updated_at = now() where team_id = $2",
-      values: [teamName, teamId],
-    };
-    await db.query(sql);
+    await db.raw<ITeamDao>("UPDATE teams SET name = :teamName, updated_at = now() where team_id = :teamId", {
+      teamName,
+      teamId,
+    });
   }
 
   async deleteTeam(teamId: number): Promise<void> {
-    const sql: QueryConfig = {
-      text: "DELETE FROM teams where team_id = $1",
-      values: [teamId],
-    };
-    await db.query(sql);
+    await db<ITeamDao>("teams").delete().where("team_id", "=", teamId);
   }
 }
 

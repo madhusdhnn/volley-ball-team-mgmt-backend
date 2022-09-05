@@ -21,15 +21,6 @@ const createTeam = async (req: Request, res: Response) => {
     const team = await teamService.createTeam(req.body as INewTeam);
     res.status(201).json({ status: "success", data: { ...team } });
   } catch (e) {
-    if ((e as Error).message.includes("duplicate key")) {
-      res.status(400).json({
-        status: "failed",
-        code: "ACC_TEAM_400",
-        message: "Team already exists",
-        detail: e.message,
-      });
-      return;
-    }
     res.status(500).json(toError(e, "ERR_500", "Error creating team"));
   }
 };

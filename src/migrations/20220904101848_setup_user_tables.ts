@@ -38,7 +38,7 @@ export async function up(knex: Knex): Promise<void> {
     ADD CONSTRAINT email_unique UNIQUE (email_id);
 
   CREATE INDEX user_role_id_fk_idx ON ${usersTable} (role_id);
-  `
+  `,
   );
 }
 

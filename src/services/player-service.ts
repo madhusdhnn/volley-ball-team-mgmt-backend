@@ -1,33 +1,10 @@
-import { QueryConfig } from "pg";
 import db from "../config/db";
 import { IPlayer, IPlayerUnits } from "../utils/types";
+import { IPlayerDao, IPlayerUnitsDao, ITeamDao } from "../utils/dao";
 import { IRowMapper, nullableSingleResult, RowMapperResultSetExtractor } from "../utils/db-utils";
 import AuthenticationService from "./authentication-service";
-import { AuthenticationError, IllegalArgumentError } from "../utils/error-utils";
-
-interface IPlayerDao {
-  player_id: number;
-  username: string;
-  name: string;
-  team_id?: number;
-  team_name?: string;
-  shirt_no: number;
-  age?: number;
-  height?: number;
-  weight?: number;
-  power?: number;
-  speed?: number;
-  location?: string;
-  favourite_positions?: string;
-  created_at: Date;
-  updated_at: Date;
-}
-
-interface IPlayerUnitsDao {
-  id: number;
-  name: string;
-  value: string;
-}
+import { AuthenticationError, IllegalArgumentError, InvalidStateError } from "../utils/error-utils";
+import { Knex } from "knex";
 
 class PlayerRowMapper implements IRowMapper<IPlayerDao, IPlayer> {
   private parseInitials(name: string): string {
@@ -71,12 +48,12 @@ class PlayerRowMapper implements IRowMapper<IPlayerDao, IPlayer> {
       id: row.player_id,
       name: row.name,
       username: row.username,
-      initials: initials,
+      initials,
       photoUrl: undefined,
       shirtNo: row.shirt_no,
-      team: team,
-      additionalInfo: additionalInfo,
-      audit: audit,
+      team,
+      additionalInfo,
+      audit,
     };
   }
 }
@@ -107,41 +84,25 @@ class PlayerService {
   }
 
   async getPlayer(playerId: number): Promise<IPlayer> {
-    const sql: QueryConfig = {
-      text: `
-      SELECT p.*, t.name AS team_name 
-      FROM players p 
-      LEFT JOIN teams t 
-        ON p.team_id = t.team_id 
-      WHERE p.player_id = $1`,
-      values: [playerId],
-    };
-
-    const res = await db.query<IPlayerDao>(sql);
+    const res: IPlayerDao[] = await db<IPlayerDao>({ p: "players" })
+      .leftJoin<ITeamDao>({ t: "teams" }, "p.team_id", "=", "t.team_id")
+      .select("p.*", { team_name: "t.name" })
+      .where("p.player_id", "=", playerId);
     return nullableSingleResult(this.playerResultSetExtractor.extract(res));
   }
 
   async getAllPlayers(): Promise<IPlayer[]> {
-    const sql = `
-      SELECT p.*, t.name AS team_name 
-      FROM players p 
-      LEFT JOIN teams t 
-        ON p.team_id = t.team_id`;
-    const res = await db.query<IPlayerDao>(sql);
+    const res: IPlayerDao[] = await db<IPlayerDao>({ p: "players" })
+      .leftJoin<ITeamDao>({ t: "teams" }, "p.team_id", "=", "t.team_id")
+      .select("p.*", { team_name: "t.name" });
     return this.playerResultSetExtractor.extract(res);
   }
 
   async getAllPlayersInTeam(teamId: number): Promise<IPlayer[]> {
-    const sql: QueryConfig = {
-      text: `
-      SELECT p.*, t.name AS team_name 
-      FROM players p 
-      JOIN teams t 
-        ON p.team_id = t.team_id 
-      WHERE p.team_id = $1`,
-      values: [teamId],
-    };
-    const res = await db.query<IPlayerDao>(sql);
+    const res: IPlayerDao[] = await db<IPlayerDao>({ p: "players" })
+      .join<ITeamDao>({ t: "teams" }, "p.team_id", "=", "t.team_id")
+      .select("p.*", { team_name: "t.name" })
+      .where("p.team_id", "=", teamId);
     return this.playerResultSetExtractor.extract(res);
   }
 
@@ -152,16 +113,21 @@ class PlayerService {
       throw new AuthenticationError("ACC_PLAYER_400", "User not registered");
     }
 
-    const sql: QueryConfig = {
-      text: "INSERT INTO players (username, name, shirt_no, created_at, updated_at) VALUES ($1, $2, $3, now(), now()) RETURNING *",
-      values: [player.username, player.name, player.shirtNo],
+    const nowTime = db.fn.now();
+    const playerData = {
+      username: player.username,
+      name: player.name,
+      shirt_no: player.shirtNo,
+      created_at: nowTime,
+      updated_at: nowTime,
     };
-    const res = await db.query<IPlayerDao>(sql);
+
+    const res: IPlayerDao[] = await db<IPlayerDao>("players").insert(playerData, "*");
     return nullableSingleResult(this.playerResultSetExtractor.extract(res));
   }
 
   async getPlayerUnits(): Promise<IPlayerUnits[]> {
-    const res = await db.query<IPlayerUnitsDao>("SELECT * FROM player_units");
+    const res: IPlayerUnitsDao[] = await db<IPlayerUnitsDao>("player_units").select("*");
     return this.playerUnitsResultSetExtractor.extract(res);
   }
 
@@ -170,99 +136,65 @@ class PlayerService {
     const fieldsToUpdate: string = Object.entries(dbFields)
       .map((entry) => `${entry[0]} = ${entry[1]}`)
       .join(", ");
-
-    const sql: QueryConfig = {
-      text: `UPDATE players SET ${fieldsToUpdate}, updated_at = now() WHERE player_id = $1`,
-      values: [player.id],
-    };
-    await db.query(sql);
+    await db.raw<IPlayerDao>(`UPDATE players SET ${fieldsToUpdate}, updated_at = now() WHERE player_id = :playerId`, {
+      playerId: player.id,
+    });
   }
 
   async deletePlayer(playerId: number): Promise<void> {
-    const sql: QueryConfig = {
-      text: "DELETE FROM players WHERE player_id = $1",
-      values: [playerId],
-    };
-    await db.query(sql);
+    await db<IPlayerDao>("players").delete().where("player_id", "=", playerId);
   }
 
   async getAllPlayersNotInTeam(): Promise<IPlayer[]> {
-    const sql = `SELECT p.*, NULL AS team_name FROM players p WHERE p.team_id IS NULL`;
-    const res = await db.query<IPlayerDao>(sql);
+    const res: IPlayerDao[] = await db<IPlayerDao>({ p: "players" }).select("p.*").whereNull("p.team_id");
     return this.playerResultSetExtractor.extract(res);
   }
 
-  async isTeamFull(teamId: number): Promise<boolean> {
-    const sql: QueryConfig = {
-      text: "SELECT (count(*) >= 6) AS is_full FROM players WHERE team_id = $1",
-      values: [teamId],
-    };
-    const res = await db.query<{ is_full: boolean }>(sql);
-    const row = res.rows[0];
-
-    return !!row?.is_full;
+  async isTeamFull(teamId: number, transaction?: Knex.Transaction): Promise<boolean> {
+    const sql = "SELECT count(*) AS team_count FROM players WHERE team_id = ?";
+    const res = await (transaction ? transaction : db).raw(sql, teamId);
+    return res.rows[0]["team_count"] >= 6;
   }
 
   async unassignFromTeam(playerId: number): Promise<void> {
-    const sql: QueryConfig = {
-      text: "UPDATE players SET team_id = NULL WHERE player_id = $1",
-      values: [playerId],
-    };
-    await db.query(sql);
+    await db<IPlayerDao>("players").update("team_id", null).where("player_id", "=", playerId);
   }
 
   async getCurrentPlayer(username: string): Promise<IPlayer> {
-    const sql: QueryConfig = {
-      text: `
-      SELECT p.*, t.name AS team_name 
-      FROM players p 
-      LEFT JOIN teams t 
-        ON p.team_id = t.team_id 
-      WHERE p.username = $1`,
-      values: [username],
-    };
-    const res = await db.query<IPlayerDao>(sql);
+    const res: IPlayerDao[] = await db<IPlayerDao>({ p: "players" })
+      .leftJoin<ITeamDao>({ t: "teams" }, "p.team_id", "=", "t.team_id")
+      .select("p.*", { team_name: "t.name" })
+      .where("p.username", "=", username);
     return nullableSingleResult(this.playerResultSetExtractor.extract(res));
   }
 
   async assignToTeam(playerIds: number[] = [], teamId: number): Promise<void> {
-    const dbClient = await db.connect();
-    try {
-      const isTeamFull = await this.isTeamFull(teamId);
+    await db.transaction(async (trxn): Promise<void> => {
+      const isTeamFull = await this.isTeamFull(teamId, trxn);
       if (isTeamFull) {
-        throw new Error("Team is already full");
+        throw new Error("Team is already full. Choose some other team");
       }
 
-      dbClient.query("BEGIN");
-
-      const sql: QueryConfig = {
-        text: "UPDATE players SET team_id = $1 WHERE player_id = ANY ($2::bigint[])",
-        values: [teamId, playerIds],
-      };
-
-      const res = await dbClient.query(sql);
-
+      const sql = "UPDATE players SET team_id = :teamId WHERE player_id = ANY (:playerIds::bigint[])";
+      const res = await trxn.raw(sql, { teamId, playerIds });
       if (res.rowCount !== playerIds.length) {
-        await dbClient.query("ROLLBACK");
         throw new IllegalArgumentError("Some of the players in input does not exist!");
       }
-      await dbClient.query("COMMIT");
-    } finally {
-      dbClient.release();
-    }
+    });
   }
 
-  async transferToTeam(toTeamId: number, playerId: number): Promise<void> {
-    const isTeamFull = await this.isTeamFull(toTeamId);
-    if (isTeamFull) {
-      throw new Error("Team is already full");
-    }
-
-    const sql: QueryConfig = {
-      text: "UPDATE players SET team_id = $1 WHERE player_id = $2",
-      values: [toTeamId, playerId],
-    };
-    await db.query(sql);
+  async transferToTeam(fromTeamId: number, toTeamId: number, playerId: number): Promise<void> {
+    await db.transaction(async (trxn) => {
+      const isTeamFull = await this.isTeamFull(toTeamId, trxn);
+      if (isTeamFull) {
+        throw new InvalidStateError("Team is already full");
+      }
+      const sql = "UPDATE players SET team_id = :toTeamId WHERE player_id = :playerId and team_id = :fromTeamId";
+      const res = await trxn.raw(sql, { toTeamId, playerId, fromTeamId });
+      if (res.rowCount < 1) {
+        throw new IllegalArgumentError("Player not in team");
+      }
+    });
   }
 
   private mapToDbFields = (player: Partial<IPlayer>): Partial<IPlayerDao> => {

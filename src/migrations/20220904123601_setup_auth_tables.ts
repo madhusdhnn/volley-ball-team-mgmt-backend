@@ -19,7 +19,7 @@ export async function up(knex: Knex): Promise<void> {
         ADD CONSTRAINT ut_username_fk FOREIGN KEY (username) REFERENCES ${usersTable} (username);
 
     CREATE INDEX ut_username_fk_idx ON ${tableName} (username);
-    `
+    `,
   );
 }
 

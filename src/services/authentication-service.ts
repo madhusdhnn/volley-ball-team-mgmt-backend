@@ -2,25 +2,11 @@ import db from "../config/db";
 import jwt from "jsonwebtoken";
 import { BcryptPasswordEncoder, generateSecureRandomKey } from "../utils/auth-utils";
 import { IRowMapper, nullableSingleResult, RowMapperResultSetExtractor } from "../utils/db-utils";
-import { IUser, INewUserData, IAuthPayload } from "../utils/types";
-import { QueryConfig } from "pg";
-import { IUserTokenDao } from "./authorization-service";
+import { IUser, INewUserData, IAuthPayload, JwtPayload } from "../utils/types";
+import { IUserDao, IRoleDao } from "../utils/dao";
+import { IUserTokenDao } from "../utils/dao";
 import { AuthenticationError } from "../utils/error-utils";
 import RoleService from "./role-service";
-
-interface IUserDao {
-  username: string;
-  password: string;
-  enabled: boolean;
-  first_name: string;
-  last_name: string;
-  profile_image_url?: string;
-  email_id?: string;
-  role_id?: number;
-  role_name?: string;
-  created_at: Date;
-  updated_at: Date;
-}
 
 class UserRowMapper implements IRowMapper<IUserDao, IUser> {
   mapRow(row: IUserDao, _rowNumber: number): IUser {
@@ -59,7 +45,7 @@ class AuthenticationService {
 
     const theRole = await this.roleService.getByName(role.toString());
     if (!theRole) {
-      throw new Error("Role does not exists");
+      throw new AuthenticationError("ROLE_ERR_404", "Role does not exists");
     }
 
     if (await this.isUsernameExists(username)) {
@@ -71,35 +57,36 @@ class AuthenticationService {
     }
 
     const hashed = this.passwordEncoder.encode(password);
-    const sql: QueryConfig = {
-      text: `
-      INSERT INTO users (username, password, first_name, last_name, email_id, role_id, enabled, created_at, updated_at) 
-        VALUES ($1, $2, $3, $4, $5, $6, true, now(), now()) RETURNING *`,
-      values: [username, hashed, firstName, lastName, emailAddress, theRole.id],
+    const newUserDao = {
+      username,
+      password: hashed,
+      first_name: firstName,
+      last_name: lastName,
+      email_id: emailAddress,
+      role_id: theRole.id,
+      enabled: true,
+      created_at: db.fn.now(),
+      updated_at: db.fn.now(),
     };
-    const res = await db.query<IUserDao>(sql);
+
+    const res = await db<IUserDao>("users").insert(newUserDao, "*");
 
     return nullableSingleResult(this.userAuthResultSetExtractor.extract(res));
   }
 
   async getAllUsers(): Promise<IUser[]> {
-    const res = await db.query<IUserDao>(
-      "SELECT u.*, r.name as role_name FROM users u JOIN roles r ON u.role_id = r.role_id",
-    );
+    const res = await db<IUserDao>({ u: "users" })
+      .join<IRoleDao>({ r: "roles" }, "u.role_id", "=", "r.role_id")
+      .select("u.*", { role_name: "r.name" });
     return this.userAuthResultSetExtractor.extract(res);
   }
 
   async signin(payload: IAuthPayload) {
-    let sql: QueryConfig = {
-      text: `
-        SELECT u.*, r.name AS role_name 
-        FROM users u 
-        JOIN roles r 
-          ON u.role_id = r.role_id 
-        WHERE u.username = $1`,
-      values: [payload.username],
-    };
-    const res = await db.query<IUserDao>(sql);
+    const res = await db<IUserDao>({ u: "users" })
+      .join<IRoleDao>({ r: "roles" }, "u.role_id", "=", "r.role_id")
+      .select("u.*", { role_name: "r.name" })
+      .where("u.username", "=", payload.username);
+
     const user: IUser = nullableSingleResult(this.userAuthResultSetExtractor.extract(res));
 
     if (!user) {
@@ -110,19 +97,19 @@ class AuthenticationService {
       throw new AuthenticationError("AUTH_403", "IUser disabled");
     }
 
-    const password = payload.password;
-    const savedPassword = res.rows[0].password;
-    const isSame = this.passwordEncoder.matches(password, savedPassword);
+    const passwordInRequest = payload.password;
+    const savedPassword = res[0].password;
+    const isSame = this.passwordEncoder.matches(passwordInRequest, savedPassword);
 
     if (!isSame) {
       throw new AuthenticationError("AUTH_401", "Password is wrong");
     }
 
-    const { username, enabled, firstName, lastName, role, profileImageUrl, emailAddress: email } = user;
+    const { username, enabled, firstName, lastName, role, profileImageUrl, emailAddress } = user;
 
     const secretKey = generateSecureRandomKey();
 
-    const userTokenData = {
+    const userTokenData: JwtPayload = {
       username,
       enabled,
       firstName,
@@ -130,67 +117,50 @@ class AuthenticationService {
       fullName: firstName + " " + lastName,
       role,
       profileImageUrl,
-      email,
+      emailAddress,
     };
 
-    const token = jwt.sign({ user: { ...userTokenData } }, secretKey, {
+    const token = jwt.sign({ user: userTokenData }, secretKey, {
       expiresIn: process.env.AUTH_TOKEN_EXPIRY,
       issuer: process.env.ISSUER,
       subject: userTokenData.username,
     });
 
-    sql = {
-      text: `INSERT INTO user_tokens (username, secret_key, token, last_used) VALUES ($1, $2, $3, now())`,
-      values: [username, secretKey, token],
-    };
-    await db.query<IUserTokenDao>(sql);
+    const userToken = { username, secret_key: secretKey, token, last_used: db.fn.now() };
+    await db<IUserTokenDao>("user_tokens").insert(userToken);
 
     return {
       status: "success",
       data: {
         accessToken: token,
+        tokenType: "Bearer",
         expiresIn: 3600,
-        user: { ...userTokenData },
       },
     };
   }
 
   async signout(username: string, jwtToken: string): Promise<void> {
-    const sql: QueryConfig = {
-      text: `DELETE FROM user_tokens WHERE username = $1 AND token = $2`,
-      values: [username, jwtToken],
-    };
-    await db.query<IUserTokenDao>(sql);
+    await db<IUserTokenDao>("user_tokens").delete().where("username", "=", username).andWhere("token", "=", jwtToken);
   }
 
   async signoutAllSessions(username: string): Promise<void> {
-    await db.query(`DELETE FROM user_tokens WHERE username = $1`, [username]);
+    await db<IUserTokenDao>("user_tokens").delete().where("username", "=", username);
   }
 
   public async isUsernameExists(username: string): Promise<boolean> {
     if (!username) {
       throw new Error("Username field is empty or null");
     }
-
-    const sql: QueryConfig = {
-      text: "SELECT username FROM users WHERE username = $1",
-      values: [username],
-    };
-    const res = await db.query(sql);
-    return res.rows.length === 1;
+    const res = await db.raw("SELECT 1 as user_exists FROM users WHERE username = ?", username);
+    return res.rows[0]?.["user_exists"] === 1;
   }
 
   public async isEmailExists(emailAddress: string): Promise<boolean> {
     if (!emailAddress) {
-      throw new Error("Username field is empty or null");
+      throw new Error("Email address field is empty or null");
     }
-
-    const sql: QueryConfig = {
-      text: "SELECT email_id FROM users WHERE email_id = $1",
-      values: [emailAddress],
-    };
-    const res = await db.query(sql);
-    return res.rows.length === 1;
+    const res = await db.raw("SELECT 1 as email_exists FROM users WHERE email_id = ?", emailAddress);
+    return res.rows[0]?.["email_exists"] === 1;
   }
 }
 

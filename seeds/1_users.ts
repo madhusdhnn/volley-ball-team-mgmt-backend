@@ -12,7 +12,7 @@ export async function seed(knex: Knex): Promise<void> {
     INSERT INTO ${rolesTable} (name, created_at, updated_at) VALUES 
         ('ADMIN', now(), now()),
         ('PLAYER', now(), now());
-    `
+    `,
   );
 
   await knex.raw(
@@ -38,6 +38,6 @@ export async function seed(knex: Knex): Promise<void> {
     '2022-02-11 09:04:42.365', '2022-02-11 09:04:42.365'),
     ('rBurk', '$2a$12$daFp/w1arwCNFZkQCRwkxu2BzB02H21cWyfPvT8XEh3armtr9rjF6', true, 'Richard', 'Burk', 2,
     '2022-02-11 11:04:42.365', '2022-02-11 11:04:42.365');
-    `
+    `,
   );
 }

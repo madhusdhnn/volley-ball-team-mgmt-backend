@@ -103,3 +103,17 @@ export interface IAssignPlayerPayload {
   playerIds: number[];
   teamId: number;
 }
+
+export type JwtPayload = {
+  username: string;
+  enabled: boolean;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  role?: {
+    id?: number;
+    name?: string;
+  };
+  profileImageUrl?: string;
+  emailAddress?: string;
+};

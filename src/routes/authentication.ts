@@ -13,8 +13,12 @@ const register = async (req: Request, res: Response) => {
     const newUser = await authenticationService.register(req.body as INewUserData);
     res.status(201).json({ status: "success", data: newUser });
   } catch (e) {
-    if (e.name && e.name === "AuthenticationError") {
+    if (e instanceof AuthenticationError) {
       const { errorCode, message } = e as AuthenticationError;
+      if (errorCode === "ROLE_ERR_404") {
+        res.status(404).json(toError(e, errorCode, message));
+        return;
+      }
       res.status(409).json(toError(e, errorCode, message));
       return;
     }
@@ -27,7 +31,7 @@ const signin = async (req: Request, res: Response) => {
     const authentication = await authenticationService.signin(req.body as IAuthPayload);
     res.status(200).json(authentication);
   } catch (e) {
-    if (e.name && e.name === "AuthenticationError") {
+    if (e instanceof AuthenticationError) {
       const { errorCode, message } = e as AuthenticationError;
       if (errorCode === "AUTH_401") {
         res.status(401).json(toError(e, errorCode, message));

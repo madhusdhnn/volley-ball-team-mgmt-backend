@@ -1,14 +1,7 @@
-import { QueryConfig } from "pg";
 import db from "../config/db";
 import { IRole } from "../utils/types";
+import { IRoleDao } from "../utils/dao";
 import { IRowMapper, nullableSingleResult, RowMapperResultSetExtractor } from "../utils/db-utils";
-
-interface IRoleDao {
-  role_id: number;
-  name: string;
-  created_at: Date;
-  updated_at: Date;
-}
 
 class RolesRowMapper implements IRowMapper<IRoleDao, IRole> {
   mapRow(row: IRoleDao, _rowNumber: number): IRole {
@@ -31,25 +24,17 @@ class RoleService {
   }
 
   async getRoles(): Promise<IRole[]> {
-    const res = await db.query<IRoleDao>("SELECT name FROM roles");
+    const res = await db<IRoleDao>("roles").select("*");
     return this.rolesResultSetExtractor.extract(res);
   }
 
   async getByName(name: string): Promise<IRole> {
-    const sql: QueryConfig = {
-      text: "SELECT * FROM roles WHERE name = $1",
-      values: [name],
-    };
-    const res = await db.query<IRoleDao>(sql);
+    const res = await db<IRoleDao>("roles").select("*").where("name", "=", name);
     return nullableSingleResult(this.rolesResultSetExtractor.extract(res));
   }
 
   async getRole(roleId: number): Promise<IRole> {
-    const sql: QueryConfig = {
-      text: `SELECT * FROM roles WHERE role_id = $1`,
-      values: [roleId],
-    };
-    const res = await db.query<IRoleDao>(sql);
+    const res = await db<IRoleDao>("roles").select("*").where("id", "=", roleId);
     return nullableSingleResult(this.rolesResultSetExtractor.extract(res));
   }
 }

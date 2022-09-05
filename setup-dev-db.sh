@@ -9,7 +9,7 @@ setup_db() {
   createdb -h localhost -p 5432 volley_team_mgmt_dev
 
   echo "Running migrations and seeds.."
-  npm run knex:dev migrate:latest && npm run knex:dev seed:run
+  npm run db:dev
 }
 
 trap setup_db 0

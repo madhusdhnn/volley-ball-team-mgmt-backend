@@ -2,7 +2,7 @@ export const unknownError = Object.freeze({
   status: "failed",
   code: "ERR_500",
   message: "Something went wrong!",
-  detail: "Internal error",
+  detail: "Internal error. Contact your owner",
 });
 
 const toError = (e: Error, errCode?: string, message?: string) => {
@@ -11,7 +11,7 @@ const toError = (e: Error, errCode?: string, message?: string) => {
       status: "failed",
       code: errCode || unknownError.code,
       message: message || unknownError.message,
-      detail: e.message,
+      moreDetails: JSON.stringify({ ...e, message: e.message }),
     };
   }
 

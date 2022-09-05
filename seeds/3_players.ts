@@ -13,7 +13,7 @@ export async function seed(knex: Knex): Promise<void> {
       ('HEIGHT', 'CM'),
       ('WEIGHT', 'KG'),
       ('SPEED', 'KMPS');
-    `
+    `,
   );
 
   await knex.schema.raw(
@@ -29,6 +29,6 @@ export async function seed(knex: Knex): Promise<void> {
         ('gunther', null, 'Gunther', 7, null, null, null, null, null, null, null, '2022-02-11 11:04:42.365', '2022-02-11 11:04:42.365'),
         ('jHosenstein', null, 'Janice Hosenstein', 8, null, null, null, null, null, null, null, '2022-02-11 11:04:42.365', '2022-02-11 11:04:42.365'),
         ('rBurk', null, 'Richard Burk', 9, null, null, null, null, null, null, null, '2022-02-11 11:04:42.365', '2022-02-11 11:04:42.365');
-    `
+    `,
   );
 }

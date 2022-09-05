@@ -14,6 +14,7 @@ This service will run in two ports - One for the APIs and the other for Authenti
 
 - KnexJS:
   - Use `knex:dev` npm script to run Knex based commands. Eg: `npm run knex:dev migrate:[make:up|down|latest|rollback|status]`
+  - Or use separate `knex:seed` and `knex:migrate` commands
   - Make sure to add `-x ts` flag at the end of any command that generates TS file; for eg: `migrate`
 - Environment variables:
   - Generate your own `.env` file from `.env.example` adding `NODE_ENV` as suffix to the file name. Eg: `.env.development`

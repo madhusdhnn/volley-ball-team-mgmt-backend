@@ -29,12 +29,12 @@ const createPlayer = async (req: IAuthenticableRequest, res: Response) => {
     const player = await playerService.createPlayer(req.body as Partial<IPlayer>);
     res.status(201).json({ status: "success", data: player });
   } catch (e) {
-    if (e.name === "AuthenticationError") {
+    if (e instanceof AuthenticationError) {
       const { errorCode } = e as AuthenticationError;
-      res.status(400).json(toError(e, errorCode));
+      res.status(400).json(toError(e, errorCode, e.message));
       return;
     }
-    res.status(500).json(toError(e, "ERR_500", "Error creating player"));
+    res.status(500).json(toError(e));
   }
 };
 
@@ -96,11 +96,11 @@ const assignToTeam = async (req: Request, res: Response) => {
     await playerService.assignToTeam(playerIds, teamId);
     res.json({ status: "success" });
   } catch (e) {
-    if (e.name === "IllegalArgumentError") {
-      res.status(400).json(toError(e as IllegalArgumentError, "ACC_PLAYER_400"));
+    if (e instanceof IllegalArgumentError) {
+      res.status(400).json(toError(e as IllegalArgumentError, "ACC_PLAYER_400", "Unable to assign players to a team"));
       return;
     }
-    res.status(500).json(toError(e, "ERR_500", "Unable to assign players to a team"));
+    res.status(500).json(toError(e));
   }
 };
 
@@ -116,11 +116,15 @@ const unassignFromTeam = async (req: Request, res: Response) => {
 
 const transferToTeam = async (req: Request, res: Response) => {
   try {
-    const { toTeamId, playerId } = req.body;
-    await playerService.transferToTeam(toTeamId, playerId);
+    const { fromTeamId, toTeamId, playerId } = req.body;
+    await playerService.transferToTeam(fromTeamId, toTeamId, playerId);
     res.json({ status: "success" });
   } catch (e) {
-    res.status(500).json(toError(e, "ERR_500", "Unable to transfer the player to new team."));
+    if (e instanceof IllegalArgumentError) {
+      res.status(400).json(toError(e, "ACC_PLAYER_400"));
+      return;
+    }
+    res.status(500).json(toError(e));
   }
 };
 

@@ -1,19 +1,14 @@
-import { QueryResult, QueryResultRow } from "pg";
 import { IncorrectResultSetDataAccessError } from "./error-utils";
-
-export interface IRowExtractor<D extends QueryResultRow, T> {
-  extract(resultSet?: QueryResult<D>): T | T[];
-}
 
 export interface IRowMapper<D, T> {
   mapRow(row: D, rowNumber: number): T;
 }
 
-export interface IResultSetExtractor<D extends QueryResultRow, T> {
-  extract(resultSet: QueryResult<D>): T;
+export interface IResultSetExtractor<D, T> {
+  extract(rows: D[]): T;
 }
 
-export class RowMapperResultSetExtractor<D extends QueryResultRow, T> implements IResultSetExtractor<D, T[]> {
+export class RowMapperResultSetExtractor<D, T> implements IResultSetExtractor<D, T[]> {
   private readonly rowMapper: IRowMapper<D, T>;
   private readonly rowsExpected: number;
 
@@ -22,10 +17,10 @@ export class RowMapperResultSetExtractor<D extends QueryResultRow, T> implements
     this.rowsExpected = rowsExpected;
   }
 
-  extract(resultSet: QueryResult<D>): T[] {
+  extract(rows: D[]): T[] {
     const results: T[] = this.rowsExpected > 0 ? Array(this.rowsExpected) : [];
     let rowNum = 0;
-    for (const row of resultSet.rows) {
+    for (const row of rows) {
       rowNum = rowNum + 1;
       results.push(this.rowMapper.mapRow(row, rowNum));
     }

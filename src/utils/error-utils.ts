@@ -4,6 +4,12 @@ class IllegalArgumentError extends Error {
     this.name = "IllegalArgumentError";
   }
 }
+class InvalidStateError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "InvalidStateError";
+  }
+}
 
 class AuthenticationError extends Error {
   public readonly errorCode: string;
@@ -21,4 +27,5 @@ class IncorrectResultSetDataAccessError extends Error {
     this.name = "IncorrectResultSetDataAccessError";
   }
 }
-export { IllegalArgumentError, AuthenticationError, IncorrectResultSetDataAccessError };
+
+export { IllegalArgumentError, InvalidStateError, AuthenticationError, IncorrectResultSetDataAccessError };

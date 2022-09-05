@@ -1,10 +1,11 @@
 {
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
-    "ecmaVersion": 2015,
+    "ecmaVersion": 2017,
     "sourceType": "module"
   },
   "env": {
+    "es6": true,
     "node": true
   },
   "ignorePatterns": [".eslintrc.json"],
@@ -17,6 +18,7 @@
         "endOfLine": "auto"
       }
     ],
+    "object-shorthand": "error",
     "no-console": "warn",
     "no-unused-vars": [
       "error",
@@ -27,7 +29,7 @@
       }
     ],
     "@typescript-eslint/no-unused-vars": [
-      "warn",
+      "error",
       {
         "vars": "all",
         "args": "none",

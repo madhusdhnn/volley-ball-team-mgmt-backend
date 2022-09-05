@@ -16,7 +16,7 @@ export async function up(knex: Knex): Promise<void> {
 
     ALTER TABLE ONLY ${tableName}
       ADD CONSTRAINT team_name_unique UNIQUE (name);
-    `
+    `,
   );
 }
 

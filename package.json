@@ -4,16 +4,20 @@
   "description": "Backend service for Volley ball team management",
   "main": "app.js",
   "scripts": {
-    "dev": "cross-env NODE_ENV=development nodemon src/app.ts",
     "clean": "rimraf dist",
     "type-check": "tsc",
-    "knex:dev": "cross-env NODE_ENV=development knex",
     "lint": "eslint --ext .ts src/**/*.ts --color",
     "lint:fix": "eslint --ext .ts src/**/*.ts --color --fix",
     "format": "prettier --write .",
+    "knex:dev": "cross-env NODE_ENV=development knex",
+    "knex:seed": "knex seed:run --knexfile src/knexfile.ts",
+    "knex:migrate": "knex migrate:latest --knexfile src/knexfile.ts",
+    "db:dev": "cross-env NODE_ENV=development npm run knex:migrate && npm run knex:seed",
     "build-js": "babel src --extensions \".ts\" -d dist",
     "build": "npm run clean && npm run lint && npm run type-check && npm run build-js",
-    "start": "cross-env NODE_ENV=production node dist/app.js"
+    "dev:prestart": "npm run lint && npm run type-check",
+    "dev": "cross-env NODE_ENV=development nodemon src/app.ts",
+    "start": "cross-env NODE_ENV=production ISSUER=VTMSAuthService AUTH_TOKEN_EXPIRY=1h DB_USER=postgres DB_HOST=localhost DB_NAME=volley_team_mgmt_dev DB_PASSWORD= node dist/app.js"
   },
   "keywords": [
     "volley",
@@ -53,10 +57,10 @@
     "eslint": "^8.23.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-prettier": "^4.2.1",
+    "husky": "^8.0.0",
     "nodemon": "^2.0.19",
     "prettier": "^2.7.1",
     "ts-node": "^10.9.1",
-    "typescript": "^4.8.2",
-    "husky": "^8.0.0"
+    "typescript": "^4.8.2"
   }
 }
