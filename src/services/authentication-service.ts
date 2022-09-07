@@ -134,7 +134,7 @@ class AuthenticationService {
       data: {
         accessToken: token,
         tokenType: "Bearer",
-        expiresIn: 3600,
+        expiresIn: process.env.AUTH_TOKEN_EXPIRY,
       },
     };
   }

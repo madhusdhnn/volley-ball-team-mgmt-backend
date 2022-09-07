@@ -157,7 +157,9 @@ class PlayerService {
   }
 
   async unassignFromTeam(playerId: number): Promise<void> {
-    await db<IPlayerDao>("players").update("team_id", null).where("player_id", "=", playerId);
+    await db<IPlayerDao>("players")
+      .update({ team_id: db.raw("NULL"), updated_at: db.fn.now() })
+      .where("player_id", "=", playerId);
   }
 
   async getCurrentPlayer(username: string): Promise<IPlayer> {
@@ -175,7 +177,8 @@ class PlayerService {
         throw new Error("Team is already full. Choose some other team");
       }
 
-      const sql = "UPDATE players SET team_id = :teamId WHERE player_id = ANY (:playerIds::bigint[])";
+      const sql =
+        "UPDATE players SET team_id = :teamId, updated_at = now() WHERE player_id = ANY (:playerIds::bigint[])";
       const res = await trxn.raw(sql, { teamId, playerIds });
       if (res.rowCount !== playerIds.length) {
         throw new IllegalArgumentError("Some of the players in input does not exist!");
@@ -189,7 +192,8 @@ class PlayerService {
       if (isTeamFull) {
         throw new InvalidStateError("Team is already full");
       }
-      const sql = "UPDATE players SET team_id = :toTeamId WHERE player_id = :playerId and team_id = :fromTeamId";
+      const sql =
+        "UPDATE players SET team_id = :toTeamId, updated_at = now() WHERE player_id = :playerId and team_id = :fromTeamId";
       const res = await trxn.raw(sql, { toTeamId, playerId, fromTeamId });
       if (res.rowCount < 1) {
         throw new IllegalArgumentError("Player not in team");
