@@ -6,7 +6,7 @@ const transportOpts =
   process.env.NODE_ENV === "development"
     ? { translateTime: "SYS:standard" }
     : {
-        destination: `${__dirname}/../logs/service.${process.env.NODE_ENV || "development"}.log`,
+        destination: `${__dirname}/../logs/service.log`,
         mkdir: true,
       };
 

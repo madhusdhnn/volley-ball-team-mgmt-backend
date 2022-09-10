@@ -10,5 +10,3 @@ logs/
 .env.development
 .env.test
 .env.production
-
-src/test-single/

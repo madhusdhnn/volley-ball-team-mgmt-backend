@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
-import { IllegalArgumentError } from "./error-utils";
 import crypto from "crypto";
+import logger from "../logger";
+import { IllegalArgumentError } from "./error-utils";
 
 const BCRYPT_PATTERN = new RegExp(/\$2([ayb])?\$(\d\d)\$[./0-9A-Za-z]{53}/);
 
@@ -15,12 +16,12 @@ class BcryptPasswordEncoder {
     }
 
     if (!encodedPassword || encodedPassword.length === 0) {
-      console.log("Empty encoded password");
+      logger.warn("Empty encoded password");
       return false;
     }
 
     if (!BCRYPT_PATTERN.test(encodedPassword)) {
-      console.log("Encoded password does not look like BCrypt");
+      logger.warn("Encoded password does not look like BCrypt");
       return false;
     }
 
