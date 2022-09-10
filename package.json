@@ -15,9 +15,9 @@
     "test:cov": "jest --coverage",
     "test:lint": "eslint --ext .ts tests/**/*.spec.ts --color",
     "db:dev": "cross-env NODE_ENV=development yarn knex:migrate && yarn knex:seed",
-    "prebuild": "yarn clean && yarn lint && tsc",
-    "build": "yarn prebuild && babel src --extensions \".ts\" -d dist",
     "dev": "cross-env NODE_ENV=development nodemon src/app.ts",
+    "db:migrate": "knex migrate:latest --knexfile dist/knexfile.js",
+    "build": "yarn clean && tsc && yarn lint && babel src --extensions \".ts\" -d dist",
     "start": "node dist/app.js"
   },
   "keywords": [
@@ -29,7 +29,6 @@
   "author": "Madhusudhanan",
   "license": "ISC",
   "dependencies": {
-    "@babel/runtime": "^7.18.9",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.0.0",
@@ -44,7 +43,6 @@
     "@babel/cli": "^7.18.10",
     "@babel/core": "^7.18.13",
     "@babel/node": "^7.18.10",
-    "@babel/plugin-transform-runtime": "^7.18.10",
     "@babel/preset-env": "^7.18.10",
     "@babel/preset-typescript": "^7.18.6",
     "@types/bcryptjs": "^2.4.2",

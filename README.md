@@ -35,3 +35,24 @@ Follow the below steps to setup the Development environment.
 
 - Run `yarn build` command to generate non-development build
 - Run `yarn start` command to start the server
+
+## CI/CD
+
+### Test & Build Phase
+
+1. Run tests
+2. Build artifact. Sub jobs are,
+    - Linting & Formatting
+    - Type checking
+    - Cleaning old artifact
+    - Build new artifact. This will produce `dist` folder
+    - Copy `dist`, `package.json` and helper script files, if any, to a folder. Say `build`
+3. Export the `build` for deployment
+
+### Deployment Phase
+
+1. Pull in the new artifact. That is, the `build` folder
+2. Install packages
+3. Run Database migrations
+4. Start the server
+5. Ping the server and complete deployment

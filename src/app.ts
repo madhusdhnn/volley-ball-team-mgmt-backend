@@ -8,6 +8,7 @@ if (NODE_ENV !== "production") {
 
 import cors from "cors";
 import express, { Request, Response, Router } from "express";
+import db from "./config/db";
 import logger from "./logger";
 import AuthenticationRouter from "./routes/authentication";
 import AdminRouter from "./routes/internal-admin";
@@ -15,6 +16,13 @@ import PlayerRouter from "./routes/players";
 import ProfileRouter from "./routes/profile";
 import PublicRouter from "./routes/public";
 import TeamRouter from "./routes/teams";
+
+db.raw("select 1 as result")
+  .then((r) => logger.info(r.rows))
+  .catch((e) => {
+    logger.error(e);
+    process.exit(1);
+  });
 
 const createApp = (routers: Router[]) => {
   const app: express.Application = express();

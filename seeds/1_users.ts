@@ -11,6 +11,7 @@ export async function seed(knex: Knex): Promise<void> {
     `
     INSERT INTO ${rolesTable} (name, created_at, updated_at) VALUES 
         ('ADMIN', now(), now()),
+        ('COACH', now(), now()),
         ('PLAYER', now(), now());
     `,
   );
