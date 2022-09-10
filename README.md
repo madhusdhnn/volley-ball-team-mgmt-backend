@@ -21,7 +21,6 @@ Follow the below steps to setup the Development environment.
     - For Non-development environments like Production, the env vars are taken care in the deployment server level
 2. Knex JS:
     - Use `knex:dev` npm script to run Knex based commands. Eg: `yarn knex:dev migrate:[make:up|down|latest|rollback|status]`
-    - Or use separate `knex:seed` and `knex:migrate` commands
     - Make sure to add `-x ts` flag at the end of any command that generates TS file; for eg: `migrate`
 3. Database setup:
     - Run `setup-dev-db.sh` or `setup-dev-db.bat` (for Windows) file to spin up a new database, apply migrations on it and seed it with sample data

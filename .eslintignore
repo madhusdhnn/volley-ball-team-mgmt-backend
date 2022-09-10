@@ -1,5 +1,5 @@
 dist/
-*.spec.ts
+coverage/
 .env*
 node_modules/
 .github
