@@ -1,7 +1,8 @@
 import db from "../config/db";
-import { INewTeam, ITeam } from "../utils/types";
 import { ITeamDao } from "../utils/dao";
 import { IRowMapper, nullableSingleResult, RowMapperResultSetExtractor } from "../utils/db-utils";
+import { InvalidStateError } from "../utils/error-utils";
+import { INewTeam, ITeam } from "../utils/types";
 
 class TeamRowMapper implements IRowMapper<ITeamDao, ITeam> {
   mapRow(row: ITeamDao, _rowNumber: number): ITeam {
@@ -53,14 +54,17 @@ class TeamsService {
   }
 
   async updateTeam(teamId: number, teamName: string): Promise<void> {
-    await db.raw<ITeamDao>("UPDATE teams SET name = :teamName, updated_at = now() where team_id = :teamId", {
-      teamName,
-      teamId,
-    });
+    const rowCount = await db<ITeamDao>("teams").update({ name: teamName }).where("team_id", "=", teamId);
+    if (rowCount < 1) {
+      throw new InvalidStateError(`Team - ${teamName} does not exists`);
+    }
   }
 
   async deleteTeam(teamId: number): Promise<void> {
-    await db<ITeamDao>("teams").delete().where("team_id", "=", teamId);
+    const rowCount = await db<ITeamDao>("teams").delete().where("team_id", "=", teamId);
+    if (rowCount < 1) {
+      throw new InvalidStateError(`Team - ${teamId} does not exists`);
+    }
   }
 }
 

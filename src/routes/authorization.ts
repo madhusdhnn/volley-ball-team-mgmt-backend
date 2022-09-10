@@ -1,10 +1,11 @@
 import { NextFunction, Request, Response } from "express";
+import logger from "../logger";
 import AuthorizationService from "../services/authorization-service";
 import PlayerService from "../services/player-service";
 import TeamsService from "../services/teams-service";
-import { IAuthenticableRequest, IPlayer } from "../utils/types";
+import { AuthenticationError } from "../utils/error-utils";
 import { toError } from "../utils/response-utils";
-import { DatabaseError } from "pg";
+import { IAuthenticableRequest, IPlayer } from "../utils/types";
 
 const authorizationService = new AuthorizationService();
 const teamService = new TeamsService();
@@ -41,7 +42,9 @@ const authorize = async (jwtToken: string, roleNames: string[] = []): Promise<Au
       authentication: jwtToken,
     };
   } catch (e) {
-    if (e.name && e.name === "AuthenticationError") {
+    logger.error(e, "Error while authorizing user");
+
+    if (e instanceof AuthenticationError) {
       return { status: "failed", code: "AUTH_ERR_401", message: e.message };
     }
 
@@ -134,6 +137,7 @@ const sameTeamAuthorize = async (req: IAuthenticableRequest, res: Response, next
       message: "You are not authorized to perform this action",
     });
   } catch (e) {
+    logger.error(e, "Error while authorizing user - sameTeamAuthorize");
     res.status(500).json(toError(e));
   }
 };
@@ -161,9 +165,7 @@ const samePlayerAuthorize = async (req: IAuthenticableRequest, res: Response, ne
       message: "You are not authorized to perform this action",
     });
   } catch (e) {
-    console.log(JSON.stringify(e));
-    console.log(JSON.stringify(e instanceof DatabaseError ? (e as DatabaseError) : "{}"));
-
+    logger.error(e, "Error while authorizing user - samePlayerAuthorize");
     res.status(500).json(toError(e));
   }
 };
@@ -192,6 +194,7 @@ const currentPlayerTeamAuthorize = async (req: IAuthenticableRequest, res: Respo
       message: "You are not authorized to perform this action",
     });
   } catch (e) {
+    logger.error(e, "Error while authorizing user - currentPlayerTeamAuthorize");
     res.status(500).json(toError(e));
   }
 };

@@ -142,7 +142,10 @@ class PlayerService {
   }
 
   async deletePlayer(playerId: number): Promise<void> {
-    await db<IPlayerDao>("players").delete().where("player_id", "=", playerId);
+    const rowCount = await db<IPlayerDao>("players").delete().where("player_id", "=", playerId);
+    if (rowCount < 1) {
+      throw new InvalidStateError(`Player - ${playerId} does not exist`);
+    }
   }
 
   async getAllPlayersNotInTeam(): Promise<IPlayer[]> {

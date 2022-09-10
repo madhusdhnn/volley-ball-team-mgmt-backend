@@ -5,15 +5,16 @@ if (NODE_ENV !== "production") {
     path: `.env.${NODE_ENV}`,
   });
 }
+
 import cors from "cors";
 import express, { Request, Response, Router } from "express";
-
+import logger from "./logger";
 import AuthenticationRouter from "./routes/authentication";
-import TeamRouter from "./routes/teams";
+import AdminRouter from "./routes/internal-admin";
 import PlayerRouter from "./routes/players";
 import ProfileRouter from "./routes/profile";
 import PublicRouter from "./routes/public";
-import AdminRouter from "./routes/internal-admin";
+import TeamRouter from "./routes/teams";
 
 const createApp = (routers: Router[]) => {
   const app: express.Application = express();
@@ -44,6 +45,6 @@ const app = createApp([PublicRouter, TeamRouter, PlayerRouter, ProfileRouter]);
 const authApp = createApp([AuthenticationRouter]);
 const adminApp = createApp([AdminRouter]);
 
-app.listen(port, () => console.log(`Server is up and running on http://localhost:${port}`));
-authApp.listen(authPort, () => console.log(`Authentication Server is up and running on http://localhost:${authPort}`));
-adminApp.listen(adminPort, () => console.log(`Admin Server is up and running on http://localhost:${adminPort}`));
+app.listen(port, () => logger.info(`Server is up and running on http://localhost:${port}`));
+authApp.listen(authPort, () => logger.info(`Authentication Server is up and running on http://localhost:${authPort}`));
+adminApp.listen(adminPort, () => logger.info(`Admin Server is up and running on http://localhost:${adminPort}`));

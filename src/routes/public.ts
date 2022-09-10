@@ -1,5 +1,4 @@
 import { Request, Response, Router } from "express";
-import { toError } from "../utils/response-utils";
 
 const router = Router();
 
@@ -22,11 +21,7 @@ const responseCodes = Object.freeze({
 });
 
 const getResponseCodes = async (_req: Request, res: Response) => {
-  try {
-    res.status(200).json({ status: "success", data: responseCodes });
-  } catch (e) {
-    res.status(500).json(toError(e));
-  }
+  res.status(200).json({ status: "success", data: responseCodes });
 };
 
 router.get("/vtms/api/v1/supported-response-codes", getResponseCodes);

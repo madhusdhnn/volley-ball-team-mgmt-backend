@@ -1,7 +1,9 @@
 import { Request, Response, Router } from "express";
+import logger from "../logger";
 import PlayerService from "../services/player-service";
-import { IAssignPlayerPayload, IAuthenticableRequest, IPlayer } from "../utils/types";
+import { AuthenticationError, IllegalArgumentError, InvalidStateError } from "../utils/error-utils";
 import { toError } from "../utils/response-utils";
+import { IAssignPlayerPayload, IAuthenticableRequest, IPlayer } from "../utils/types";
 import {
   adminAuthorize,
   commonAuthorize,
@@ -10,7 +12,6 @@ import {
   samePlayerAuthorize,
   sameTeamAuthorize,
 } from "./authorization";
-import { AuthenticationError, IllegalArgumentError } from "../utils/error-utils";
 
 const playerService = new PlayerService();
 const playerRouter = Router();
@@ -20,6 +21,7 @@ const fetchPlayerUnitsMetadata = async (_req: Request, res: Response) => {
     const playerUnits = await playerService.getPlayerUnits();
     res.json({ status: "success", data: playerUnits });
   } catch (e) {
+    logger.error(e);
     res.status(500).json(toError(e));
   }
 };
@@ -29,6 +31,7 @@ const createPlayer = async (req: IAuthenticableRequest, res: Response) => {
     const player = await playerService.createPlayer(req.body as Partial<IPlayer>);
     res.status(201).json({ status: "success", data: player });
   } catch (e) {
+    logger.error(e);
     if (e instanceof AuthenticationError) {
       const { errorCode } = e as AuthenticationError;
       res.status(400).json(toError(e, errorCode, e.message));
@@ -43,6 +46,7 @@ const getAllPlayers = async (_req: Request, res: Response) => {
     const players = await playerService.getAllPlayers();
     res.json({ status: "success", data: players });
   } catch (e) {
+    logger.error(e);
     res.status(500).json(toError(e));
   }
 };
@@ -52,11 +56,12 @@ const getPlayer = async (req: Request, res: Response) => {
     const playerId = req.params["playerId"];
     const player = await playerService.getPlayer(parseInt(playerId));
     if (!player) {
-      res.status(404).json({ status: "failed", message: "Data not found" });
+      res.status(404).json({ status: "failed", message: "Player not found" });
       return;
     }
     res.json({ status: "success", data: player });
   } catch (e) {
+    logger.error(e);
     res.status(500).json(toError(e));
   }
 };
@@ -67,6 +72,7 @@ const getAllPlayersInTeam = async (req: Request, res: Response) => {
     const players = await playerService.getAllPlayersInTeam(parseInt(teamId));
     res.json({ status: "success", data: players });
   } catch (e) {
+    logger.error(e);
     res.status(500).json(toError(e));
   }
 };
@@ -76,6 +82,7 @@ const updatePlayer = async (req: Request, res: Response) => {
     await playerService.updatePlayer(req.body as IPlayer);
     res.json({ status: "success" });
   } catch (e) {
+    logger.error(e);
     res.status(500).json(toError(e));
   }
 };
@@ -86,6 +93,11 @@ const deletePlayer = async (req: Request, res: Response) => {
     await playerService.deletePlayer(parseInt(playerId));
     res.json({ status: "success" });
   } catch (e) {
+    logger.error(e);
+    if (e instanceof InvalidStateError) {
+      res.status(400).json(toError(e as InvalidStateError, "ACC_PLAYER_400"));
+      return;
+    }
     res.status(500).json(toError(e));
   }
 };
@@ -96,6 +108,7 @@ const assignToTeam = async (req: Request, res: Response) => {
     await playerService.assignToTeam(playerIds, teamId);
     res.json({ status: "success" });
   } catch (e) {
+    logger.error(e);
     if (e instanceof IllegalArgumentError) {
       res.status(400).json(toError(e as IllegalArgumentError, "ACC_PLAYER_400", "Unable to assign players to a team"));
       return;
@@ -110,6 +123,7 @@ const unassignFromTeam = async (req: Request, res: Response) => {
     await playerService.unassignFromTeam(parseInt(playerId));
     res.status(200).json({ status: "success" });
   } catch (e) {
+    logger.error(e);
     res.status(500).json(toError(e, "ERR_500", "Unable to remove player from the team."));
   }
 };
@@ -120,6 +134,7 @@ const transferToTeam = async (req: Request, res: Response) => {
     await playerService.transferToTeam(fromTeamId, toTeamId, playerId);
     res.json({ status: "success" });
   } catch (e) {
+    logger.error(e);
     if (e instanceof IllegalArgumentError) {
       res.status(400).json(toError(e, "ACC_PLAYER_400"));
       return;
@@ -136,6 +151,7 @@ const getAllPlayerNotInTeam = async (_req: Request, res: Response) => {
       data: players,
     });
   } catch (e) {
+    logger.error(e);
     res.status(500).json(toError(e));
   }
 };

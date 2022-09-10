@@ -11,7 +11,7 @@ export async function up(knex: Knex): Promise<void> {
     CREATE TABLE ${playerUnitsTable}
     (
       id    bigserial PRIMARY KEY,
-      name  text NOT NULL,
+      name  text NOT NULL UNIQUE,
       value text NOT NULL
     );
 

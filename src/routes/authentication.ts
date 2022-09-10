@@ -1,8 +1,9 @@
 import { Request, Response, Router } from "express";
+import logger from "../logger";
 import AuthenticationService from "../services/authentication-service";
-import { IAuthenticableRequest, IAuthPayload, INewUserData } from "../utils/types";
 import { AuthenticationError } from "../utils/error-utils";
 import { toError } from "../utils/response-utils";
+import { IAuthenticableRequest, IAuthPayload, INewUserData } from "../utils/types";
 import { adminAuthorize, commonAuthorize, requestBodyValidator } from "./authorization";
 
 const authenticationService = new AuthenticationService();
@@ -15,6 +16,7 @@ const register = async (req: Request, res: Response) => {
   } catch (e) {
     if (e instanceof AuthenticationError) {
       const { errorCode, message } = e as AuthenticationError;
+      logger.error(e, `Error while registering new user. ${errorCode}-${message}`);
       if (errorCode === "ROLE_ERR_404") {
         res.status(404).json(toError(e, errorCode, message));
         return;
@@ -33,6 +35,7 @@ const signin = async (req: Request, res: Response) => {
   } catch (e) {
     if (e instanceof AuthenticationError) {
       const { errorCode, message } = e as AuthenticationError;
+      logger.error(e, `Error while signing in user. ${errorCode}-${message}`);
       if (errorCode === "AUTH_401") {
         res.status(401).json(toError(e, errorCode, message));
         return;
@@ -43,6 +46,7 @@ const signin = async (req: Request, res: Response) => {
         return;
       }
     }
+    logger.error(e);
     res.status(500).json(toError(e));
   }
 };
@@ -52,6 +56,7 @@ const allUsers = async (_req: Request, res: Response) => {
     const users = await authenticationService.getAllUsers();
     res.status(200).json({ status: "success", data: users });
   } catch (e) {
+    logger.error(e, "Error while fetching all users");
     res.status(500).json(toError(e));
   }
 };
@@ -69,6 +74,7 @@ const signout = async (req: IAuthenticableRequest, res: Response) => {
 
     res.status(200).json({ status: "success" });
   } catch (e) {
+    logger.error(e, "Error while signing out user");
     res.status(500).json(toError(e));
   }
 };

@@ -2,6 +2,7 @@ node_modules/
 .idea/
 dist/
 lib/
+logs/
 
 *.iml
 *.log
