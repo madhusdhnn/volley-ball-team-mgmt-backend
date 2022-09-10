@@ -1,10 +1,10 @@
+import { Knex } from "knex";
 import db from "../config/db";
-import { IPlayer, IPlayerUnits } from "../utils/types";
 import { IPlayerDao, IPlayerUnitsDao, ITeamDao } from "../utils/dao";
 import { IRowMapper, nullableSingleResult, RowMapperResultSetExtractor } from "../utils/db-utils";
-import AuthenticationService from "./authentication-service";
 import { AuthenticationError, IllegalArgumentError, InvalidStateError } from "../utils/error-utils";
-import { Knex } from "knex";
+import { IPlayer, IPlayerUnits } from "../utils/types";
+import AuthenticationService from "./authentication-service";
 
 class PlayerRowMapper implements IRowMapper<IPlayerDao, IPlayer> {
   private parseInitials(name: string): string {
@@ -199,6 +199,27 @@ class PlayerService {
         throw new IllegalArgumentError("Player not in team");
       }
     });
+  }
+
+  async createPlayerUnit(payload: IPlayerUnits): Promise<IPlayerUnits> {
+    const res = await db<IPlayerUnitsDao>("player_units").insert({ name: payload.name, value: payload.value }, "*");
+    return nullableSingleResult(this.playerUnitsResultSetExtractor.extract(res));
+  }
+
+  async updatePlayerUnit(payload: IPlayerUnits): Promise<void> {
+    const rowCount = await db<IPlayerUnitsDao>("player_units")
+      .update({ value: payload.value })
+      .where("name", "=", payload.name);
+    if (rowCount < 1) {
+      throw new InvalidStateError(`PlayerUnit - ${JSON.stringify(payload)} does not exists`);
+    }
+  }
+
+  async deletePlayerUnit(name: string): Promise<void> {
+    const rowCount = await db<IPlayerUnitsDao>("player_units").delete().where("name", "=", name);
+    if (rowCount < 1) {
+      throw new InvalidStateError(`PlayerUnit - ${name} does not exists`);
+    }
   }
 
   private mapToDbFields = (player: Partial<IPlayer>): Partial<IPlayerDao> => {

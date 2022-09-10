@@ -210,7 +210,7 @@ const requestBodyValidator = async (req: Request, res: Response, next: NextFunct
 const internalAdminAuthorize = async (req: Request, res: Response, next: NextFunction) => {
   const adminApiKey = req.headers["x-api-key"];
   if (!adminApiKey || adminApiKey !== process.env.ADMIN_API_KEY) {
-    res.status(401).json({ error: "You are not authorized to perform this action" });
+    res.status(403).json({ error: "You are not authorized to perform this action" });
     return;
   }
   next();
