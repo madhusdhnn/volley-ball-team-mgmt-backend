@@ -3,23 +3,12 @@ import db from "../config/db";
 import { IUserToken } from "../utils/types";
 import { IUserTokenDao } from "../utils/dao";
 
-import { IRowMapper, nullableSingleResult, RowMapperResultSetExtractor } from "../utils/db-utils";
+import { nullableSingleResult, RowMapperResultSetExtractor } from "../utils/db-utils";
 import { AuthenticationError } from "../utils/error-utils";
-
-class UserTokenRowMapper implements IRowMapper<IUserTokenDao, IUserToken> {
-  mapRow(row: IUserTokenDao): IUserToken {
-    return {
-      id: row.id,
-      username: row.username,
-      secretKey: row.secret_key,
-      token: row.token,
-      lastUsed: row.last_used,
-    };
-  }
-}
+import UserTokenRowMapper from "../row-mappers/user-token-row-mapper";
 
 class AuthorizationService {
-  private readonly authResultSetExtractor: RowMapperResultSetExtractor<IUserTokenDao, IUserToken>;
+  private authResultSetExtractor: RowMapperResultSetExtractor<IUserTokenDao, IUserToken>;
 
   constructor() {
     this.authResultSetExtractor = new RowMapperResultSetExtractor<IUserTokenDao, IUserToken>(new UserTokenRowMapper());

@@ -1,24 +1,24 @@
 import { IncorrectResultSetDataAccessError } from "./error-utils";
 
-export interface IRowMapper<D, T> {
-  mapRow(row: D, rowNumber: number): T;
+export interface IRowMapper<TDao, TResult> {
+  mapRow(row: TDao, rowNumber: number): TResult;
 }
 
-export interface IResultSetExtractor<D, T> {
-  extract(rows: D[]): T;
+export interface IResultSetExtractor<TDao, TResult> {
+  extract(rows: TDao[]): TResult;
 }
 
-export class RowMapperResultSetExtractor<D, T> implements IResultSetExtractor<D, T[]> {
-  private readonly rowMapper: IRowMapper<D, T>;
-  private readonly rowsExpected: number;
+export class RowMapperResultSetExtractor<TDao, TResult> implements IResultSetExtractor<TDao, TResult[]> {
+  private rowMapper: IRowMapper<TDao, TResult>;
+  private rowsExpected: number;
 
-  constructor(rowMapper: IRowMapper<D, T>, rowsExpected = 0) {
+  constructor(rowMapper: IRowMapper<TDao, TResult>, rowsExpected = 0) {
     this.rowMapper = rowMapper;
     this.rowsExpected = rowsExpected;
   }
 
-  extract(rows: D[]): T[] {
-    const results: T[] = this.rowsExpected > 0 ? Array(this.rowsExpected) : [];
+  extract(rows: TDao[]): TResult[] {
+    const results: TResult[] = this.rowsExpected > 0 ? Array(this.rowsExpected) : [];
     let rowNum = 0;
     for (const row of rows) {
       rowNum = rowNum + 1;

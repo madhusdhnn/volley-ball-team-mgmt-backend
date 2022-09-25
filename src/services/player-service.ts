@@ -1,83 +1,22 @@
 import { Knex } from "knex";
 import db from "../config/db";
 import { IPlayerDao, IPlayerUnitsDao, ITeamDao } from "../utils/dao";
-import { IRowMapper, nullableSingleResult, RowMapperResultSetExtractor } from "../utils/db-utils";
+import { nullableSingleResult, RowMapperResultSetExtractor } from "../utils/db-utils";
 import { AuthenticationError, IllegalArgumentError, InvalidStateError } from "../utils/error-utils";
 import { IPlayer, IPlayerUnits } from "../utils/types";
 import AuthenticationService from "./authentication-service";
-
-class PlayerRowMapper implements IRowMapper<IPlayerDao, IPlayer> {
-  private parseInitials(name: string): string {
-    if (!name) {
-      return "";
-    }
-
-    const [firstName, lastName] = name.split(" ");
-    const initials = firstName.substring(0, 1) + "" + (lastName ? lastName.substring(0, 1) : "");
-
-    return initials;
-  }
-
-  mapRow(row: IPlayerDao, _rowNumber: number): IPlayer {
-    const initials = this.parseInitials(row.name);
-
-    const additionalInfo = {
-      age: row.age,
-      height: row.height,
-      weight: row.weight,
-      power: row.power,
-      speed: row.speed,
-      location: row.location,
-      favouritePositions: row.favourite_positions ? row.favourite_positions.split(",") : [],
-    };
-
-    const audit = {
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-    };
-
-    let team = null;
-    if (row.team_id || row.team_name) {
-      team = {
-        id: row.team_id,
-        name: row.team_name,
-      };
-    }
-
-    return {
-      id: row.player_id,
-      name: row.name,
-      username: row.username,
-      initials,
-      photoUrl: undefined,
-      shirtNo: row.shirt_no,
-      team,
-      additionalInfo,
-      audit,
-    };
-  }
-}
-
-class PlayerUnitsRowMapper implements IRowMapper<IPlayerUnitsDao, IPlayerUnits> {
-  mapRow(row: IPlayerUnitsDao, _rowNumber: number): IPlayerUnits {
-    return {
-      id: row.id,
-      name: row.name,
-      value: row.value,
-    };
-  }
-}
+import PlayerRowMapper from "../row-mappers/player-row-mapper";
+import PlayerUnitsRowMapper from "../row-mappers/playerunits-row-mapper";
 
 class PlayerService {
   private authService: AuthenticationService;
-  private readonly playerResultSetExtractor: RowMapperResultSetExtractor<IPlayerDao, IPlayer>;
 
-  private readonly playerUnitsResultSetExtractor: RowMapperResultSetExtractor<IPlayerUnitsDao, IPlayerUnits>;
+  private playerResultSetExtractor: RowMapperResultSetExtractor<IPlayerDao, IPlayer>;
+  private playerUnitsResultSetExtractor: RowMapperResultSetExtractor<IPlayerUnitsDao, IPlayerUnits>;
 
   constructor() {
     this.authService = new AuthenticationService();
     this.playerResultSetExtractor = new RowMapperResultSetExtractor<IPlayerDao, IPlayer>(new PlayerRowMapper());
-
     this.playerUnitsResultSetExtractor = new RowMapperResultSetExtractor<IPlayerUnitsDao, IPlayerUnits>(
       new PlayerUnitsRowMapper(),
     );
@@ -107,7 +46,7 @@ class PlayerService {
   }
 
   async createPlayer(player: Partial<IPlayer>): Promise<IPlayer> {
-    const isUserRegistered = await this.authService.isUsernameExists(player.username || "");
+    const isUserRegistered = await this.authService.isUsernameExists(player.username as string);
 
     if (!isUserRegistered) {
       throw new AuthenticationError("ACC_PLAYER_400", "User not registered");

@@ -1,25 +1,12 @@
 import db from "../config/db";
+import TeamRowMapper from "../row-mappers/team-row-mapper";
 import { ITeamDao } from "../utils/dao";
-import { IRowMapper, nullableSingleResult, RowMapperResultSetExtractor } from "../utils/db-utils";
+import { nullableSingleResult, RowMapperResultSetExtractor } from "../utils/db-utils";
 import { InvalidStateError } from "../utils/error-utils";
 import { INewTeam, ITeam } from "../utils/types";
 
-class TeamRowMapper implements IRowMapper<ITeamDao, ITeam> {
-  mapRow(row: ITeamDao, _rowNumber: number): ITeam {
-    return {
-      id: row.team_id,
-      name: row.name,
-      maxPlayers: row.max_players,
-      audit: {
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-      },
-    };
-  }
-}
-
 class TeamsService {
-  private readonly teamRSE: RowMapperResultSetExtractor<ITeamDao, ITeam>;
+  private teamRSE: RowMapperResultSetExtractor<ITeamDao, ITeam>;
   private static readonly MAX_PLAYERS: number = 6;
 
   constructor() {

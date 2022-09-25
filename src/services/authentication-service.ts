@@ -1,33 +1,13 @@
 import db from "../config/db";
 import jwt from "jsonwebtoken";
 import { BcryptPasswordEncoder, generateSecureRandomKey } from "../utils/auth-utils";
-import { IRowMapper, nullableSingleResult, RowMapperResultSetExtractor } from "../utils/db-utils";
+import { nullableSingleResult, RowMapperResultSetExtractor } from "../utils/db-utils";
 import { IUser, INewUserData, IAuthPayload, JwtPayload } from "../utils/types";
 import { IUserDao, IRoleDao } from "../utils/dao";
 import { IUserTokenDao } from "../utils/dao";
 import { AuthenticationError } from "../utils/error-utils";
 import RoleService from "./role-service";
-
-class UserRowMapper implements IRowMapper<IUserDao, IUser> {
-  mapRow(row: IUserDao, _rowNumber: number): IUser {
-    return {
-      username: row.username,
-      enabled: row.enabled,
-      firstName: row.first_name,
-      lastName: row.last_name,
-      emailAddress: row.email_id,
-      profileImageUrl: row.profile_image_url,
-      role: {
-        id: row.role_id,
-        name: row.role_name,
-      },
-      audit: {
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-      },
-    };
-  }
-}
+import UserRowMapper from "../row-mappers/user-row-mapper";
 
 class AuthenticationService {
   private passwordEncoder: BcryptPasswordEncoder;
