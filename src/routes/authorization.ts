@@ -2,13 +2,11 @@ import { NextFunction, Request, Response } from "express";
 import logger from "../logger";
 import AuthorizationService from "../services/authorization-service";
 import PlayerService from "../services/player-service";
-import TeamsService from "../services/teams-service";
 import { AuthenticationError } from "../utils/error-utils";
 import { toError } from "../utils/response-utils";
-import { IAuthenticableRequest, IPlayer } from "../utils/types";
+import { IAuthenticableRequest, IPlayer, JwtPayload } from "../utils/types";
 
 const authorizationService = new AuthorizationService();
-const teamService = new TeamsService();
 const playerService = new PlayerService();
 
 const getCurrentPlayer = async (username: string): Promise<IPlayer> => {
@@ -19,7 +17,7 @@ type Authorization = {
   status: "failed" | "success";
   code?: string;
   message?: string;
-  user?: any;
+  user?: JwtPayload;
   authentication?: string;
 };
 
@@ -86,27 +84,28 @@ const authorizeUser = async (
 
   req.user = authorization.user;
   req.authentication = authorization.authentication;
-  req.isAdmin = authorization.user.role.name === "ADMIN";
+  req.isAdmin = ["ADMIN", "COACH"].includes(authorization.user?.role?.name as string);
   next();
 };
 
 /**
- * Authorize only ADMIN users
+ * Authorize only ADMIN and COACH users.
+ * NOTE: This method assumes COACH is also an ADMIN. To verify only ADMIN, use `internalAdminAuthorize()` middleware
  */
 const adminAuthorize = async (req: IAuthenticableRequest, res: Response, next: NextFunction) => {
-  await authorizeUser(req, res, next, ["ADMIN"]);
+  await authorizeUser(req, res, next, ["ADMIN", "COACH"]);
 };
 
 /**
  * Authorize all kinds of users (ADMIN, PLAYER, etc)
  */
 const commonAuthorize = async (req: IAuthenticableRequest, res: Response, next: NextFunction) => {
-  await authorizeUser(req, res, next, ["ADMIN", "PLAYER"]);
+  await authorizeUser(req, res, next, ["ADMIN", "COACH", "PLAYER"]);
 };
 
 /**
  * Authorize user to view the details of the team that he/ she belongs to.
- * NOTE: ADMIN user is always allowed.
+ * NOTE: ADMIN or COACH user is always allowed.
  */
 const sameTeamAuthorize = async (req: IAuthenticableRequest, res: Response, next: NextFunction) => {
   try {
@@ -122,10 +121,9 @@ const sameTeamAuthorize = async (req: IAuthenticableRequest, res: Response, next
       return;
     }
 
-    const teamInRequest = await teamService.getTeam(parseInt(teamId));
-    const currentPlayer = await getCurrentPlayer(user.username);
+    const currentPlayer = await getCurrentPlayer(user?.username as string);
 
-    if (req.isAdmin || currentPlayer.team?.id === teamInRequest.id) {
+    if (req.isAdmin || Number(currentPlayer.team?.id) === parseInt(teamId)) {
       req.player = currentPlayer;
       next();
       return;
@@ -144,14 +142,14 @@ const sameTeamAuthorize = async (req: IAuthenticableRequest, res: Response, next
 
 /**
  * Authorize user to update only his/ her own profile details.
- * NOTE: ADMIN user can perform this action by default.
+ * NOTE: ADMIN or COACH user can perform this action by default.
  */
 const samePlayerAuthorize = async (req: IAuthenticableRequest, res: Response, next: NextFunction) => {
   try {
     const user = req.user;
     const playerId = req.params["playerId"] || req.body["playerId"] || req.body["id"];
 
-    const currentPlayer = await getCurrentPlayer(user.username);
+    const currentPlayer = await getCurrentPlayer(user?.username as string);
     const playerInRequest = await playerService.getPlayer(parseInt(playerId));
 
     if (req.isAdmin || currentPlayer.id === playerInRequest.id) {
@@ -172,14 +170,14 @@ const samePlayerAuthorize = async (req: IAuthenticableRequest, res: Response, ne
 
 /**
  * Authorize user to view a player details if the player and the authenticated user are in same team.
- * NOTE: ADMIN user is always allowed.
+ * NOTE: ADMIN or COACH user is always allowed.
  */
 const currentPlayerTeamAuthorize = async (req: IAuthenticableRequest, res: Response, next: NextFunction) => {
   try {
     const user = req.user;
     const playerId = req.params["playerId"];
 
-    const currentPlayer = await getCurrentPlayer(user.username);
+    const currentPlayer = await getCurrentPlayer(user?.username as string);
     const playerInRequest = await playerService.getPlayer(parseInt(playerId));
 
     if (req.isAdmin || currentPlayer.team?.id === playerInRequest.team?.id) {
@@ -210,13 +208,16 @@ const requestBodyValidator = async (req: Request, res: Response, next: NextFunct
   next();
 };
 
+/**
+ * Authorize only ADMIN users. It also expects x-api-key header to further strict the authorization
+ */
 const internalAdminAuthorize = async (req: Request, res: Response, next: NextFunction) => {
   const adminApiKey = req.headers["x-api-key"];
   if (!adminApiKey || adminApiKey !== process.env.ADMIN_API_KEY) {
     res.status(403).json({ error: "You are not authorized to perform this action" });
     return;
   }
-  next();
+  await authorizeUser(req, res, next, ["ADMIN"]);
 };
 
 export {

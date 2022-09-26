@@ -52,13 +52,13 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{api_baseurl}}/teams/2",
+							"raw": "{{api_baseurl}}/teams/1",
 							"host": [
 								"{{api_baseurl}}"
 							],
 							"path": [
 								"teams",
-								"2"
+								"1"
 							]
 						}
 					},
@@ -250,7 +250,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"playerIds\": [10],\r\n    \"teamId\": 2\r\n}",
+							"raw": "{\r\n    \"playerIds\": [7],\r\n    \"teamId\": 2\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -286,14 +286,14 @@
 						"method": "PUT",
 						"header": [],
 						"url": {
-							"raw": "{{api_baseurl}}/players/unassign/10",
+							"raw": "{{api_baseurl}}/players/unassign/7",
 							"host": [
 								"{{api_baseurl}}"
 							],
 							"path": [
 								"players",
 								"unassign",
-								"10"
+								"7"
 							]
 						}
 					},
@@ -417,13 +417,13 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{api_baseurl}}/players/10",
+							"raw": "{{api_baseurl}}/players/4",
 							"host": [
 								"{{api_baseurl}}"
 							],
 							"path": [
 								"players",
-								"10"
+								"4"
 							]
 						}
 					},
@@ -537,15 +537,13 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{api_baseurl}}/teams/1/players/4",
+							"raw": "{{api_baseurl}}/players/2",
 							"host": [
 								"{{api_baseurl}}"
 							],
 							"path": [
-								"teams",
-								"1",
 								"players",
-								"4"
+								"2"
 							]
 						}
 					},
@@ -575,7 +573,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"username\": \"hSpecter\",\r\n    \"password\": \"hspec@123\"\r\n}",
+							"raw": "{\r\n    \"username\": \"rGreen\",\r\n    \"password\": \"Fashion\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -673,38 +671,11 @@
 						}
 					},
 					"response": []
-				},
-				{
-					"name": "All Users",
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{access_token}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{auth_baseurl}}/all-users",
-							"host": [
-								"{{auth_baseurl}}"
-							],
-							"path": [
-								"all-users"
-							]
-						}
-					},
-					"response": []
 				}
 			]
 		},
 		{
-			"name": "Internal Admin",
+			"name": "Admin",
 			"item": [
 				{
 					"name": "Roles",
@@ -712,6 +683,16 @@
 						{
 							"name": "Create Role",
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "POST",
 								"header": [
 									{
@@ -744,6 +725,16 @@
 						{
 							"name": "All Roles",
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [
 									{
@@ -767,6 +758,16 @@
 						{
 							"name": "Update Role",
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "PUT",
 								"header": [
 									{
@@ -799,6 +800,16 @@
 						{
 							"name": "Delete Role",
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "DELETE",
 								"header": [
 									{
@@ -842,6 +853,16 @@
 						{
 							"name": "Create PlayerUnit",
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "POST",
 								"header": [
 									{
@@ -852,7 +873,7 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n    \"name\": \"HEIGHT\",\r\n    \"value\": \"KG\"\r\n}",
+									"raw": "{\r\n    \"name\": \"POWER\",\r\n    \"value\": \"KG\"\r\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -875,6 +896,16 @@
 						{
 							"name": "All PlayerUnits",
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [
 									{
@@ -899,6 +930,16 @@
 						{
 							"name": "Update PlayerUnit",
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "PUT",
 								"header": [
 									{
@@ -909,7 +950,7 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n    \"name\": \"HEIGHT\",\r\n    \"value\": \"CM\"\r\n}",
+									"raw": "{\r\n    \"name\": \"POWER\",\r\n    \"value\": \"KGS\"\r\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -932,6 +973,16 @@
 						{
 							"name": "Delete PlayerUnit",
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "DELETE",
 								"header": [
 									{
@@ -969,6 +1020,46 @@
 							"response": []
 						}
 					]
+				},
+				{
+					"name": "All Users",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-api-key",
+								"value": "{{admin_api_key}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{admin_baseurl}}/users/all?type=COACH",
+							"host": [
+								"{{admin_baseurl}}"
+							],
+							"path": [
+								"users",
+								"all"
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": "COACH"
+								}
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
@@ -1028,7 +1119,7 @@
 		},
 		{
 			"key": "admin_baseurl",
-			"value": "http://localhost:5003/vtms/internal-admin/v1",
+			"value": "http://localhost:5003/vtms/admin/v1",
 			"type": "string"
 		},
 		{

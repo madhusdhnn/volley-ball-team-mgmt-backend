@@ -1,15 +1,16 @@
 import * as dotenv from "dotenv";
+import path from "path";
 const NODE_ENV = process.env.NODE_ENV || "development";
 if (NODE_ENV !== "production") {
   dotenv.config({
-    path: `.env.${NODE_ENV}`,
+    path: path.resolve(__dirname, "..", `.env.${NODE_ENV}`),
   });
 }
 
 import { createApp } from "./app";
 import logger from "./logger";
 import AuthenticationRouter from "./routes/authentication";
-import AdminRouter from "./routes/internal-admin";
+import AdminRouter from "./routes/admin";
 import PlayerRouter from "./routes/players";
 import ProfileRouter from "./routes/profile";
 import PublicRouter from "./routes/public";

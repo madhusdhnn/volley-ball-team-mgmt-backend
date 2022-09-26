@@ -36,8 +36,8 @@ export interface IPlayer {
 
 export interface IAuthenticableRequest extends Request {
   authentication?: string;
-  user?: any;
-  player?: any;
+  user?: JwtPayload;
+  player?: IPlayer;
   isAdmin?: boolean;
   logoutAllSessions?: boolean;
 }

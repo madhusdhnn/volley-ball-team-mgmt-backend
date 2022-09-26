@@ -65,6 +65,14 @@ class AuthenticationService {
     return this.userAuthResultSetExtractor.extract(res);
   }
 
+  async getAllUsersByType(type: string): Promise<IUser[]> {
+    const res = await db<IUserDao>({ u: "users" })
+      .join<IRoleDao>({ r: "roles" }, "u.role_id", "=", "r.role_id")
+      .select("u.*", { role_name: "r.name" })
+      .where("r.name", "=", type);
+    return this.userAuthResultSetExtractor.extract(res);
+  }
+
   async signin(payload: IAuthPayload) {
     const res = await db<IUserDao>({ u: "users" })
       .join<IRoleDao>({ r: "roles" }, "u.role_id", "=", "r.role_id")

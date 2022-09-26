@@ -4,7 +4,7 @@ import logger from "../logger";
 import TeamService from "../services/teams-service";
 import { toError } from "../utils/response-utils";
 import { INewTeam } from "../utils/types";
-import { adminAuthorize, requestBodyValidator, sameTeamAuthorize } from "./authorization";
+import { adminAuthorize, commonAuthorize, requestBodyValidator, sameTeamAuthorize } from "./authorization";
 
 const teamService = new TeamService();
 const teamRouter = Router();
@@ -68,7 +68,7 @@ const deleteTeam = async (req: Request, res: Response) => {
   }
 };
 
-teamRouter.get("/vtms/api/v1/teams/:teamId", adminAuthorize, sameTeamAuthorize, getTeam);
+teamRouter.get("/vtms/api/v1/teams/:teamId", commonAuthorize, sameTeamAuthorize, getTeam);
 teamRouter.get("/vtms/api/v1/teams", adminAuthorize, getAllTeams);
 teamRouter.post("/vtms/api/v1/teams", requestBodyValidator, adminAuthorize, createTeam);
 teamRouter.put("/vtms/api/v1/teams", requestBodyValidator, adminAuthorize, updateTeam);

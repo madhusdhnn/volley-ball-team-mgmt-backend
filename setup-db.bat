@@ -6,8 +6,8 @@ if [%1]==[] (
 )
 
 if not defined NODE_ENV (
-  echo NODE_ENV is not set..
-  exit /b 1
+  echo NODE_ENV is not set. So defaulting to Environment: development
+  set NODE_ENV=development
 )
 
 set DB_NAME_INPUT=%1

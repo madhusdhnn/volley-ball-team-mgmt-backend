@@ -2,27 +2,31 @@
 set -e
 
 if [[ -z "$1" ]];then
-  printf "Usage: ./setup-db.sh <DB_NAME>"
-  return 1
+  echo "Usage: ./setup-db.sh <DB_NAME>"
+  exit 1
+fi
 
 if [[ -z "${NODE_ENV}" ]];then
-  printf "NODE_ENV is not set.."
-  return 1
+  echo "NODE_ENV is not set. So defaulting to Environment: development"
+  export NODE_ENV=development
+fi
+
+db_name=$1
 
 setup_db() {
   echo "Dropping database.."
-  dropdb --if-exists --force -h localhost -p 5432 $1
+  dropdb --if-exists --force -U postgres -h localhost -p 5432 $db_name
 
   echo "Creating database.."
-  createdb -h localhost -p 5432 $1
+  createdb -U postgres -h localhost -p 5432 $db_name
 
   echo "Running migrations and seeds.."
   case $NODE_ENV in
   "test")
-  npm run test
+  yarn db:test
   ;;
   "development")
-  npm run dev
+  yarn db:dev
   ;;
   *)
   echo "Skipping.." 
