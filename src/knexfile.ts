@@ -24,7 +24,7 @@ const config: KnexConfig = {
       host: "localhost",
       user: "postgres",
       password: "",
-      database: "volley_team_mgmt_dev",
+      database: "volley_db_dev",
     },
     migrations: {
       directory: "./migrations",
@@ -41,7 +41,7 @@ const config: KnexConfig = {
       host: "localhost",
       user: "postgres",
       password: "",
-      database: "volley_team_mgmt_test",
+      database: "volley_db_test",
     },
     migrations: {
       directory: "./migrations",

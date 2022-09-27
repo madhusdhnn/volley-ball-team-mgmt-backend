@@ -15,6 +15,7 @@ import {
 
 const playerService = new PlayerService();
 const playerRouter = Router();
+const baseUrl = "/vtms/api/v1";
 
 const fetchPlayerUnitsMetadata = async (_req: Request, res: Response) => {
   try {
@@ -156,22 +157,16 @@ const getAllPlayerNotInTeam = async (_req: Request, res: Response) => {
   }
 };
 
-playerRouter.get("/vtms/api/v1/players/metadata", commonAuthorize, fetchPlayerUnitsMetadata);
-playerRouter.get("/vtms/api/v1/teams/:teamId/players", commonAuthorize, sameTeamAuthorize, getAllPlayersInTeam);
-playerRouter.get(
-  "/vtms/api/v1/teams/:teamId/players/:playerId",
-  commonAuthorize,
-  currentPlayerTeamAuthorize,
-  getPlayer,
-);
-playerRouter.put("/vtms/api/v1/players", adminAuthorize, samePlayerAuthorize, updatePlayer);
-playerRouter.get("/vtms/api/v1/players/available", adminAuthorize, getAllPlayerNotInTeam);
-playerRouter.put("/vtms/api/v1/players/unassign/:playerId", adminAuthorize, unassignFromTeam);
-playerRouter.get("/vtms/api/v1/players/:playerId", adminAuthorize, getPlayer);
-playerRouter.get("/vtms/api/v1/players", adminAuthorize, getAllPlayers);
-playerRouter.post("/vtms/api/v1/players", requestBodyValidator, adminAuthorize, createPlayer);
-playerRouter.put("/vtms/api/v1/players/assign", requestBodyValidator, adminAuthorize, assignToTeam);
-playerRouter.put("/vtms/api/v1/players/transfer", requestBodyValidator, adminAuthorize, transferToTeam);
-playerRouter.delete("/vtms/api/v1/players/:playerId", adminAuthorize, deletePlayer);
+playerRouter.post(`${baseUrl}/players`, requestBodyValidator, adminAuthorize, createPlayer);
+playerRouter.get(`${baseUrl}/players/metadata`, commonAuthorize, fetchPlayerUnitsMetadata);
+playerRouter.get(`${baseUrl}/teams/:teamId/players`, commonAuthorize, sameTeamAuthorize, getAllPlayersInTeam);
+playerRouter.get(`${baseUrl}/players/:playerId`, commonAuthorize, currentPlayerTeamAuthorize, getPlayer);
+playerRouter.get(`${baseUrl}/players/available`, adminAuthorize, getAllPlayerNotInTeam);
+playerRouter.get(`${baseUrl}/players`, adminAuthorize, getAllPlayers);
+playerRouter.put(`${baseUrl}/players`, commonAuthorize, samePlayerAuthorize, updatePlayer);
+playerRouter.put(`${baseUrl}/players/unassign/:playerId`, adminAuthorize, unassignFromTeam);
+playerRouter.put(`${baseUrl}/players/assign`, requestBodyValidator, adminAuthorize, assignToTeam);
+playerRouter.put(`${baseUrl}/players/transfer`, requestBodyValidator, adminAuthorize, transferToTeam);
+playerRouter.delete(`${baseUrl}/players/:playerId`, adminAuthorize, deletePlayer);
 
 export default playerRouter;

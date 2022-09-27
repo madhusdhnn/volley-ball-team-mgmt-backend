@@ -1,11 +1,11 @@
-import db from "../config/db";
 import jwt from "jsonwebtoken";
+import db from "../config/db";
 import { BcryptPasswordEncoder, generateSecureRandomKey } from "../utils/auth-utils";
+
+import { IRoleDao, IUserDao, IUserTokenDao } from "../utils/dao";
 import { nullableSingleResult, RowMapperResultSetExtractor } from "../utils/db-utils";
-import { IUser, INewUserData, IAuthPayload, JwtPayload } from "../utils/types";
-import { IUserDao, IRoleDao } from "../utils/dao";
-import { IUserTokenDao } from "../utils/dao";
 import { AuthenticationError } from "../utils/error-utils";
+import { IAuthPayload, INewUserData, IUser, JwtPayload } from "../utils/types";
 import RoleService from "./role-service";
 import UserRowMapper from "../row-mappers/user-row-mapper";
 
@@ -51,13 +51,25 @@ class AuthenticationService {
 
     const res = await db<IUserDao>("users").insert(newUserDao, "*");
 
-    return nullableSingleResult(this.userAuthResultSetExtractor.extract(res));
+    const user = nullableSingleResult(this.userAuthResultSetExtractor.extract(res));
+    if (user) {
+      user.role = { ...user.role, name: theRole.name };
+    }
+    return user;
   }
 
   async getAllUsers(): Promise<IUser[]> {
     const res = await db<IUserDao>({ u: "users" })
       .join<IRoleDao>({ r: "roles" }, "u.role_id", "=", "r.role_id")
       .select("u.*", { role_name: "r.name" });
+    return this.userAuthResultSetExtractor.extract(res);
+  }
+
+  async getAllUsersByType(type: string): Promise<IUser[]> {
+    const res = await db<IUserDao>({ u: "users" })
+      .join<IRoleDao>({ r: "roles" }, "u.role_id", "=", "r.role_id")
+      .select("u.*", { role_name: "r.name" })
+      .where("r.name", "=", type);
     return this.userAuthResultSetExtractor.extract(res);
   }
 
@@ -70,7 +82,7 @@ class AuthenticationService {
     const user: IUser = nullableSingleResult(this.userAuthResultSetExtractor.extract(res));
 
     if (!user) {
-      throw new AuthenticationError("AUTH_401", "Username and password does not match");
+      throw new AuthenticationError("AUTH_401", "User does not exists");
     }
 
     if (!user.enabled) {
