@@ -15,10 +15,11 @@
     "test:cov": "jest --coverage",
     "test:lint": "eslint --ext .ts tests/**/*.spec.ts --color",
     "db:dev": "cross-env NODE_ENV=development yarn knex:migrate && yarn knex:seed",
-    "dev": "cross-env NODE_ENV=development nodemon src/app.ts",
+    "db:test": "cross-env NODE_ENV=test yarn knex:migrate && yarn knex:seed",
     "db:migrate": "knex migrate:latest --knexfile dist/knexfile.js",
+    "dev": "cross-env NODE_ENV=development nodemon src/server.ts",
     "build": "yarn clean && tsc && yarn lint && babel src --extensions \".ts\" -d dist",
-    "start": "node dist/app.js"
+    "start": "node dist/server.js"
   },
   "keywords": [
     "volley",

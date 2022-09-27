@@ -60,6 +60,7 @@ const allUsers = async (_req: Request, res: Response) => {
     res.status(500).json(toError(e));
   }
 };
+
 const signout = async (req: IAuthenticableRequest, res: Response) => {
   try {
     const jwtToken = req.authentication || "";
