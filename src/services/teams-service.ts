@@ -15,7 +15,7 @@ class TeamsService {
   }
 
   async getAllTeams(): Promise<ITeam[]> {
-    const res = await db<ITeamDao>("teams").select("*");
+    const res = await db<ITeamDao>("teams").orderBy("team_id").select("*");
     return this.teamRSE.extract(res);
   }
 
@@ -40,11 +40,12 @@ class TeamsService {
     return nullableSingleResult(this.teamRSE.extract(res));
   }
 
-  async updateTeam(teamId: number, teamName: string): Promise<void> {
-    const rowCount = await db<ITeamDao>("teams").update({ name: teamName }).where("team_id", "=", teamId);
-    if (rowCount < 1) {
+  async updateTeam(teamId: number, teamName: string): Promise<ITeam> {
+    const res = await db<ITeamDao>("teams").update({ name: teamName }, "*").where("team_id", "=", teamId);
+    if (res.length < 1) {
       throw new InvalidStateError(`Team - ${teamName} does not exists`);
     }
+    return nullableSingleResult(this.teamRSE.extract(res));
   }
 
   async deleteTeam(teamId: number): Promise<void> {

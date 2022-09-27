@@ -49,8 +49,8 @@ const getTeam = async (req: Request, res: Response) => {
 const updateTeam = async (req: Request, res: Response) => {
   try {
     const { teamId, name } = req.body;
-    await teamService.updateTeam(teamId, name);
-    res.json({ status: "success" });
+    const updatedTeam = await teamService.updateTeam(teamId, name);
+    res.json({ status: "success", data: updatedTeam });
   } catch (e) {
     logger.error(e);
     res.status(500).json(toError(e));
