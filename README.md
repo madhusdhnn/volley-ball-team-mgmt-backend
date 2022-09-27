@@ -17,7 +17,8 @@ This service will run in two ports - One for the APIs and the other for Authenti
 Follow the below steps to setup the Development environment.
 
 1. Environment variables:
-    - Generate your own `.env` file from `.env.example` by adding `NODE_ENV` as suffix to the file name. Eg: `.env.development`
+    - Generate your own `.env` file from `.env.example` by adding `NODE_ENV` as suffix to the file name. Eg: `.env.development`.
+    - Fill out the variables with your own details. For eg: `ADMIN_API_KEY` variable can be any hash or random string
     - For Non-development environments like Production, the env vars are taken care in the deployment server level
 2. Knex JS:
     - Use `knex:dev` npm script to run Knex based commands. Eg: `yarn knex:dev migrate:[make:up|down|latest|rollback|status]`
