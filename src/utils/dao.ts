@@ -30,6 +30,7 @@ export interface IUserTokenDao {
 export interface IPlayerDao {
   player_id: number;
   username: string;
+  player_type: string;
   name: string;
   team_id?: number;
   team_name?: string;
@@ -54,6 +55,7 @@ export interface IPlayerUnitsDao {
 export interface ITeamDao {
   team_id: number;
   name: string;
+  coach_name?: string;
   max_players: number;
   created_at: Date;
   updated_at: Date;

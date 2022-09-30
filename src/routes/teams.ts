@@ -2,6 +2,7 @@ import { Request, Response, Router } from "express";
 import { DatabaseError } from "pg";
 import logger from "../logger";
 import TeamService from "../services/teams-service";
+import { IllegalArgumentError } from "../utils/error-utils";
 import { toError } from "../utils/response-utils";
 import { INewTeam } from "../utils/types";
 import { adminAuthorize, commonAuthorize, requestBodyValidator, sameTeamAuthorize } from "./authorization";
@@ -57,6 +58,21 @@ const updateTeam = async (req: Request, res: Response) => {
   }
 };
 
+const updateCoach = async (req: Request, res: Response) => {
+  try {
+    const { teamId, coach } = req.body;
+    const updatedTeam = await teamService.updateCoach(teamId, coach);
+    res.json({ status: "success", data: updatedTeam });
+  } catch (e) {
+    logger.error(e);
+    if (e instanceof IllegalArgumentError) {
+      res.status(400).json(toError(e, "ACC_TEAM_400", e.message));
+      return;
+    }
+    res.status(500).json(toError(e));
+  }
+};
+
 const deleteTeam = async (req: Request, res: Response) => {
   try {
     const teamId = req.params["teamId"];
@@ -72,6 +88,7 @@ teamRouter.get("/vtms/api/v1/teams/:teamId", commonAuthorize, sameTeamAuthorize,
 teamRouter.get("/vtms/api/v1/teams", adminAuthorize, getAllTeams);
 teamRouter.post("/vtms/api/v1/teams", requestBodyValidator, adminAuthorize, createTeam);
 teamRouter.put("/vtms/api/v1/teams", requestBodyValidator, adminAuthorize, updateTeam);
+teamRouter.put("/vtms/api/v1/teams/coach", requestBodyValidator, adminAuthorize, updateCoach);
 teamRouter.delete("/vtms/api/v1/teams/:teamId", adminAuthorize, deleteTeam);
 
 export default teamRouter;

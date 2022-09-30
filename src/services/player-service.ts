@@ -164,6 +164,16 @@ class PlayerService {
     }
   }
 
+  async verifyAndGetCoach(username: string): Promise<IPlayer> {
+    const res = await db<IPlayerDao>("players").select("*").where("username", "=", username);
+    const coach = nullableSingleResult(this.playerResultSetExtractor.extract(res));
+
+    if (!coach || coach.playerType !== "COACH") {
+      throw new IllegalArgumentError(`${username} is not a coach`);
+    }
+    return coach;
+  }
+
   private mapToDbFields = (player: Partial<IPlayer>): Partial<IPlayerDao> => {
     const fields: Partial<IPlayerDao> = {};
 

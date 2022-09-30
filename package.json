@@ -7,7 +7,7 @@
     "clean": "rimraf dist",
     "lint": "eslint --ext .ts src/**/*.ts --color",
     "format": "prettier --write .",
-    "knex:dev": "cross-env NODE_ENV=development knex",
+    "knex:dev": "cross-env NODE_ENV=development knex --knexfile src/knexfile.ts",
     "knex:seed": "knex seed:run --knexfile src/knexfile.ts",
     "knex:migrate": "knex migrate:latest --knexfile src/knexfile.ts",
     "test": "jest",

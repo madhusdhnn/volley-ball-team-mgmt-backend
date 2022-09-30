@@ -7,6 +7,7 @@ class TeamRowMapper implements IRowMapper<ITeamDao, ITeam> {
     return {
       id: row.team_id,
       name: row.name,
+      coachName: row.coach_name,
       maxPlayers: row.max_players,
       audit: {
         createdAt: row.created_at,

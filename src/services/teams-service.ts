@@ -4,12 +4,15 @@ import { ITeamDao } from "../utils/dao";
 import { nullableSingleResult, RowMapperResultSetExtractor } from "../utils/db-utils";
 import { InvalidStateError } from "../utils/error-utils";
 import { INewTeam, ITeam } from "../utils/types";
+import PlayerService from "./player-service";
 
 class TeamsService {
   private teamRSE: RowMapperResultSetExtractor<ITeamDao, ITeam>;
+  private playerService: PlayerService;
   private static readonly MAX_PLAYERS: number = 6;
 
   constructor() {
+    this.playerService = new PlayerService();
     const teamRM = new TeamRowMapper();
     this.teamRSE = new RowMapperResultSetExtractor<ITeamDao, ITeam>(teamRM);
   }
@@ -31,6 +34,7 @@ class TeamsService {
     const nowTime = db.fn.now();
     const teamData = {
       name: teamNameFormatted,
+      coach_name: payload.coachName,
       max_players: TeamsService.MAX_PLAYERS,
       created_at: nowTime,
       updated_at: nowTime,
@@ -44,6 +48,15 @@ class TeamsService {
     const res = await db<ITeamDao>("teams").update({ name: teamName }, "*").where("team_id", "=", teamId);
     if (res.length < 1) {
       throw new InvalidStateError(`Team - ${teamName} does not exists`);
+    }
+    return nullableSingleResult(this.teamRSE.extract(res));
+  }
+
+  async updateCoach(teamId: number, coachId: string): Promise<ITeam> {
+    const coach = await this.playerService.verifyAndGetCoach(coachId);
+    const res = await db<ITeamDao>("teams").update({ coach_name: coach.name }, "*").where("team_id", "=", teamId);
+    if (res.length < 1) {
+      throw new InvalidStateError(`Could not update coach for team-id: ${teamId}`);
     }
     return nullableSingleResult(this.teamRSE.extract(res));
   }

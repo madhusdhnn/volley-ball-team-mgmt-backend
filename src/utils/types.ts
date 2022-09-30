@@ -8,6 +8,7 @@ export interface IAudit {
 export interface ITeam {
   id: number;
   name: string;
+  coachName?: string;
   maxPlayers: number;
   audit: IAudit;
 }
@@ -25,6 +26,7 @@ export interface IAdditionalInfo {
 export interface IPlayer {
   id: number;
   name: string;
+  playerType: string;
   username: string;
   initials: string;
   photoUrl?: string;
@@ -77,6 +79,7 @@ export enum RoleType {
 
 export interface INewTeam {
   teamName: string;
+  coachName?: string;
 }
 
 export interface INewUserData {

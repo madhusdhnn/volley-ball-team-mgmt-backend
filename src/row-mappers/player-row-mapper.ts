@@ -43,6 +43,7 @@ class PlayerRowMapper implements IRowMapper<IPlayerDao, IPlayer> {
     return {
       id: row.player_id,
       name: row.name,
+      playerType: row.player_type,
       username: row.username,
       initials,
       photoUrl: undefined,
