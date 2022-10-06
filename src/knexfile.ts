@@ -3,54 +3,29 @@ import type { Knex } from "knex";
 type KnexConfig = { [key: string]: Knex.Config };
 
 const config: KnexConfig = {
-  production: {
+  [process.env.NODE_ENV as string]: {
     client: "pg",
     connection: {
-      port: 5432,
-      host: process.env.DB_HOST,
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_NAME,
+      port: parseInt(process.env.DB_PORT as string),
+      host: process.env.DB_HOST as string,
+      user: process.env.DB_USER as string,
+      password: process.env.DB_PASSWORD as string,
+      database: process.env.DB_NAME as string,
     },
     migrations: {
       directory: "./migrations",
       tableName: "knex_migrations",
-    },
-  },
-  development: {
-    client: "pg",
-    connection: {
-      port: 5432,
-      host: "localhost",
-      user: "postgres",
-      password: "",
-      database: "volley_db_dev",
-    },
-    migrations: {
-      directory: "./migrations",
-      tableName: "knex_migrations",
-    },
-    seeds: {
-      directory: "../seeds",
-    },
-  },
-  test: {
-    client: "pg",
-    connection: {
-      port: 5432,
-      host: "localhost",
-      user: "postgres",
-      password: "",
-      database: "volley_db_test",
-    },
-    migrations: {
-      directory: "./migrations",
-      tableName: "knex_migrations",
-    },
-    seeds: {
-      directory: "../seeds",
     },
   },
 };
+
+if (["development", "test"].includes(process.env.NODE_ENV as string)) {
+  config[process.env.NODE_ENV as string] = {
+    ...config[process.env.NODE_ENV as string],
+    seeds: {
+      directory: "../seeds",
+    },
+  };
+}
 
 export default config;
