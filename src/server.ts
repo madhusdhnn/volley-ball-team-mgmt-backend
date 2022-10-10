@@ -1,8 +1,7 @@
 import * as dotenv from "dotenv";
 import path from "path";
 const NODE_ENV = process.env.NODE_ENV || "development";
-
-if (["development", "test"].includes(NODE_ENV)) {
+if (NODE_ENV !== "production") {
   dotenv.config({
     path: path.resolve(__dirname, "..", `.env.${NODE_ENV}`),
   });

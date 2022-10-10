@@ -1,46 +1,20 @@
-import { GetSecretValueCommand, SecretsManagerClient } from "@aws-sdk/client-secrets-manager";
-import { Knex } from "knex";
-import { PgConnectionSecretValue } from "./utils/types";
+import type { Knex } from "knex";
 
 type KnexConfig = { [key: string]: Knex.Config };
-
-const defaultConfig = {
-  port: 5432,
-  host: "localhost",
-  user: "postgres",
-  password: "",
-  database: "volley_db_default",
-};
-
-let pgConnectionSecretValue: PgConnectionSecretValue;
 
 const config: KnexConfig = {
   [process.env.NODE_ENV as string]: {
     client: "pg",
+    connection: {
+      port: parseInt(process.env.DB_PORT as string),
+      host: process.env.DB_HOST as string,
+      user: process.env.DB_USER as string,
+      password: process.env.DB_PASSWORD as string,
+      database: process.env.DB_NAME as string,
+    },
     migrations: {
       directory: "./migrations",
       tableName: "knex_migrations",
-    },
-    connection: async () => {
-      if (!pgConnectionSecretValue) {
-        const secretResult = await new SecretsManagerClient({ region: process.env.AWS_REGION as string }).send(
-          new GetSecretValueCommand({ SecretId: process.env.DB_ACCESS_USER_SECRET_NAME as string }),
-        );
-
-        if (!secretResult.SecretString) {
-          return defaultConfig;
-        }
-
-        pgConnectionSecretValue = JSON.parse(secretResult.SecretString) as PgConnectionSecretValue;
-      }
-
-      return {
-        port: parseInt(pgConnectionSecretValue.port),
-        host: pgConnectionSecretValue.host,
-        user: pgConnectionSecretValue.username,
-        password: pgConnectionSecretValue.password,
-        database: pgConnectionSecretValue.dbname,
-      };
     },
   },
 };

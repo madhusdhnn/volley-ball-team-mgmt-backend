@@ -120,12 +120,3 @@ export type JwtPayload = {
   profileImageUrl?: string;
   emailAddress?: string;
 };
-
-export type PgConnectionSecretValue = {
-  port: string;
-  dbname: string;
-  host: string;
-  username: string;
-  password: string;
-  engine: string;
-};
