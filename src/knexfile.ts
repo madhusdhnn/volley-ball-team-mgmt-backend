@@ -1,4 +1,5 @@
 import type { Knex } from "knex";
+import { isDevOrTetEnv } from "./utils/env-utils";
 
 type KnexConfig = { [key: string]: Knex.Config };
 
@@ -19,7 +20,7 @@ const config: KnexConfig = {
   },
 };
 
-if (["development", "test"].includes(process.env.NODE_ENV as string)) {
+if (isDevOrTetEnv()) {
   config[process.env.NODE_ENV as string] = {
     ...config[process.env.NODE_ENV as string],
     seeds: {
