@@ -1,5 +1,13 @@
 import type { Knex } from "knex";
-import { isDevOrTetEnv } from "./utils/env-utils";
+import * as dotenv from "dotenv";
+import path from "path";
+import { isDevOrTestEnv } from "./utils/env-utils";
+
+if (isDevOrTestEnv()) {
+  dotenv.config({
+    path: path.resolve(__dirname, "..", `.env.${process.env.NODE_ENV as string}`),
+  });
+}
 
 type KnexConfig = { [key: string]: Knex.Config };
 
@@ -20,7 +28,7 @@ const config: KnexConfig = {
   },
 };
 
-if (isDevOrTetEnv()) {
+if (isDevOrTestEnv()) {
   config[process.env.NODE_ENV as string] = {
     ...config[process.env.NODE_ENV as string],
     seeds: {

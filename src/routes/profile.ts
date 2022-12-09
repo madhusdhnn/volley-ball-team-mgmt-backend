@@ -16,6 +16,6 @@ const getProfile = async (req: IAuthenticableRequest, res: Response) => {
   }
 };
 
-router.get("/vtms/api/v1/profile", commonAuthorize, getProfile);
+router.get("/v1/vtms/api/profile", commonAuthorize, getProfile);
 
 export default router;

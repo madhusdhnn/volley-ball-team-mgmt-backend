@@ -5,14 +5,15 @@ import AuthenticationService from "../services/authentication-service";
 import PlayerService from "../services/player-service";
 import RoleService from "../services/role-service";
 import { InvalidStateError } from "../utils/error-utils";
+import { parsePaginationInput } from "../utils/request-utils";
 import { toError } from "../utils/response-utils";
-import { IPlayerUnits, IUser } from "../utils/types";
+import { IPlayerUnits } from "../utils/types";
 import { internalAdminAuthorize } from "./authorization";
 
 const router = Router();
 router.use(internalAdminAuthorize);
 
-const baseUrl = "/vtms/admin/v1";
+const baseUrl = "/v1/vtms/admin";
 
 const roleService = new RoleService();
 const playerService = new PlayerService();
@@ -22,14 +23,11 @@ const allUsers = async (req: Request, res: Response) => {
   try {
     const type = req.query["type"] as string;
 
-    let users: IUser[];
-    if (type) {
-      users = await authenticationService.getAllUsersByType(type);
-    } else {
-      users = await authenticationService.getAllUsers();
-    }
+    const { page, count } = parsePaginationInput(req);
 
-    res.status(200).json({ status: "success", data: users });
+    const result = await authenticationService.getAllUsers(type, page, count);
+
+    res.status(200).json({ status: "success", data: { users: result.data, pagination: result.pagination } });
   } catch (e) {
     logger.error(e, "Error while fetching all users");
     res.status(500).json(toError(e));
@@ -77,8 +75,8 @@ const deleteRole = async (req: Request, res: Response) => {
 
 const getRoles = async (_req: Request, res: Response) => {
   try {
-    const role = await roleService.getRoles();
-    res.status(200).json({ status: "success", data: role });
+    const roles = await roleService.getRoles();
+    res.status(200).json({ status: "success", data: roles });
   } catch (e) {
     logger.error(e);
     res.status(500).json(toError(e));

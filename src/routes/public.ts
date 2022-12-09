@@ -24,6 +24,6 @@ const getResponseCodes = async (_req: Request, res: Response) => {
   res.status(200).json({ status: "success", data: responseCodes });
 };
 
-router.get("/vtms/api/v1/supported-response-codes", getResponseCodes);
+router.get("/v1/vtms/api/supported-response-codes", getResponseCodes);
 
 export default router;

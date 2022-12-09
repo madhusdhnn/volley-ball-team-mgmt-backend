@@ -5,7 +5,7 @@ import { BcryptPasswordEncoder, generateSecureRandomKey } from "../utils/auth-ut
 import { IRoleDao, IUserDao, IUserTokenDao } from "../utils/dao";
 import { nullableSingleResult, RowMapperResultSetExtractor } from "../utils/db-utils";
 import { AuthenticationError } from "../utils/error-utils";
-import { IAuthPayload, INewUserData, IUser, JwtPayload } from "../utils/types";
+import { IAuthPayload, INewUserData, IPagedResult, IUser, JwtPayload } from "../utils/types";
 import RoleService from "./role-service";
 import UserRowMapper from "../row-mappers/user-row-mapper";
 
@@ -58,19 +58,27 @@ class AuthenticationService {
     return user;
   }
 
-  async getAllUsers(): Promise<IUser[]> {
-    const res = await db<IUserDao>({ u: "users" })
-      .join<IRoleDao>({ r: "roles" }, "u.role_id", "=", "r.role_id")
-      .select("u.*", { role_name: "r.name" });
-    return this.userAuthResultSetExtractor.extract(res);
-  }
+  async getAllUsers(type?: string, page = 1, count = 10): Promise<IPagedResult<IUser[]>> {
+    let result;
 
-  async getAllUsersByType(type: string): Promise<IUser[]> {
-    const res = await db<IUserDao>({ u: "users" })
-      .join<IRoleDao>({ r: "roles" }, "u.role_id", "=", "r.role_id")
-      .select("u.*", { role_name: "r.name" })
-      .where("r.name", "=", type);
-    return this.userAuthResultSetExtractor.extract(res);
+    if (type) {
+      result = await db<IUserDao>({ u: "users" })
+        .join<IRoleDao>({ r: "roles" }, "u.role_id", "=", "r.role_id")
+        .select("u.*", { role_name: "r.name" })
+        .paginate({ currentPage: page, perPage: count })
+        .where("r.name", "=", type.toUpperCase())
+        .orderBy("first_name");
+    } else {
+      result = await db<IUserDao>({ u: "users" })
+        .join<IRoleDao>({ r: "roles" }, "u.role_id", "=", "r.role_id")
+        .select("u.*", { role_name: "r.name" })
+        .orderBy("first_name")
+        .paginate({ currentPage: page, perPage: count });
+    }
+    return {
+      data: this.userAuthResultSetExtractor.extract(result.data),
+      pagination: result.pagination,
+    };
   }
 
   async signin(payload: IAuthPayload) {

@@ -8,12 +8,13 @@ import PlayerService from "./player-service";
 
 class TeamsService {
   private teamRSE: RowMapperResultSetExtractor<ITeamDao, ITeam>;
-  private playerService: PlayerService;
   private static readonly MAX_PLAYERS: number = 6;
 
+  private playerService: PlayerService;
+
   constructor() {
-    this.playerService = new PlayerService();
     const teamRM = new TeamRowMapper();
+    this.playerService = new PlayerService();
     this.teamRSE = new RowMapperResultSetExtractor<ITeamDao, ITeam>(teamRM);
   }
 
@@ -44,21 +45,21 @@ class TeamsService {
     return nullableSingleResult(this.teamRSE.extract(res));
   }
 
-  async updateTeam(teamId: number, teamName: string): Promise<ITeam> {
-    const res = await db<ITeamDao>("teams").update({ name: teamName }, "*").where("team_id", "=", teamId);
-    if (res.length < 1) {
+  async updateTeam(teamId: number, teamName: string, username?: string): Promise<void> {
+    const updateFields: Partial<ITeamDao> = {
+      name: teamName,
+    };
+
+    if (username) {
+      const coach = await this.playerService.verifyAndGetCoach(username);
+      updateFields["coach_name"] = coach.name;
+    }
+
+    const rowCount = await db<ITeamDao>("teams").update(updateFields).where("team_id", "=", teamId);
+
+    if (rowCount < 1) {
       throw new InvalidStateError(`Team - ${teamName} does not exists`);
     }
-    return nullableSingleResult(this.teamRSE.extract(res));
-  }
-
-  async updateCoach(teamId: number, coachId: string): Promise<ITeam> {
-    const coach = await this.playerService.verifyAndGetCoach(coachId);
-    const res = await db<ITeamDao>("teams").update({ coach_name: coach.name }, "*").where("team_id", "=", teamId);
-    if (res.length < 1) {
-      throw new InvalidStateError(`Could not update coach for team-id: ${teamId}`);
-    }
-    return nullableSingleResult(this.teamRSE.extract(res));
   }
 
   async deleteTeam(teamId: number): Promise<void> {

@@ -62,15 +62,15 @@ const signout = async (req: IAuthenticableRequest, res: Response) => {
     } else {
       await authenticationService.signout(user?.username as string, jwtToken);
     }
-    res.status(200).json({ status: "success" });
+    res.status(204).end();
   } catch (e) {
     logger.error(e, "Error while signing out user");
     res.status(500).json(toError(e));
   }
 };
 
-router.post("/vtms/auth/register", requestBodyValidator, register);
-router.post("/vtms/auth/signin", requestBodyValidator, signin);
-router.post("/vtms/auth/signout", commonAuthorize, signout);
+router.post("/v1/vtms/auth/register", requestBodyValidator, register);
+router.post("/v1/vtms/auth/signin", requestBodyValidator, signin);
+router.post("/v1/vtms/auth/signout", commonAuthorize, signout);
 
 export default router;

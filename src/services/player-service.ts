@@ -3,7 +3,7 @@ import db from "../config/db";
 import { IPlayerDao, IPlayerUnitsDao, ITeamDao } from "../utils/dao";
 import { nullableSingleResult, RowMapperResultSetExtractor } from "../utils/db-utils";
 import { AuthenticationError, IllegalArgumentError, InvalidStateError } from "../utils/error-utils";
-import { IPlayer, IPlayerUnits } from "../utils/types";
+import { IPagedResult, IPlayer, IPlayerUnits } from "../utils/types";
 import AuthenticationService from "./authentication-service";
 import PlayerRowMapper from "../row-mappers/player-row-mapper";
 import PlayerUnitsRowMapper from "../row-mappers/playerunits-row-mapper";
@@ -23,26 +23,38 @@ class PlayerService {
   }
 
   async getPlayer(playerId: number): Promise<IPlayer> {
-    const res: IPlayerDao[] = await db<IPlayerDao>({ p: "players" })
+    const result: IPlayerDao[] = await db<IPlayerDao>({ p: "players" })
       .leftJoin<ITeamDao>({ t: "teams" }, "p.team_id", "=", "t.team_id")
       .select("p.*", { team_name: "t.name" })
       .where("p.player_id", "=", playerId);
-    return nullableSingleResult(this.playerResultSetExtractor.extract(res));
+    return nullableSingleResult(this.playerResultSetExtractor.extract(result));
   }
 
-  async getAllPlayers(): Promise<IPlayer[]> {
-    const res: IPlayerDao[] = await db<IPlayerDao>({ p: "players" })
-      .leftJoin<ITeamDao>({ t: "teams" }, "p.team_id", "=", "t.team_id")
-      .select("p.*", { team_name: "t.name" });
-    return this.playerResultSetExtractor.extract(res);
+  async getAllPlayers(type = "ALL", page = 1, count = 10): Promise<IPagedResult<IPlayer[]>> {
+    let result;
+    if (type === "UNASSIGNED") {
+      result = await db<IPlayerDao>({ p: "players" })
+        .select("p.*")
+        .orderBy("name")
+        .whereNull("p.team_id")
+        .paginate({ currentPage: page, perPage: count });
+    } else {
+      result = await db<IPlayerDao>({ p: "players" })
+        .leftJoin<ITeamDao>({ t: "teams" }, "p.team_id", "=", "t.team_id")
+        .select("p.*", { team_name: "t.name" })
+        .orderBy("name")
+        .paginate({ currentPage: page, perPage: count });
+    }
+
+    return { data: this.playerResultSetExtractor.extract(result.data), pagination: result.pagination };
   }
 
   async getAllPlayersInTeam(teamId: number): Promise<IPlayer[]> {
-    const res: IPlayerDao[] = await db<IPlayerDao>({ p: "players" })
+    const result: IPlayerDao[] = await db<IPlayerDao>({ p: "players" })
       .join<ITeamDao>({ t: "teams" }, "p.team_id", "=", "t.team_id")
       .select("p.*", { team_name: "t.name" })
       .where("p.team_id", "=", teamId);
-    return this.playerResultSetExtractor.extract(res);
+    return this.playerResultSetExtractor.extract(result);
   }
 
   async createPlayer(player: Partial<IPlayer>): Promise<IPlayer> {
@@ -61,13 +73,13 @@ class PlayerService {
       updated_at: nowTime,
     };
 
-    const res: IPlayerDao[] = await db<IPlayerDao>("players").insert(playerData, "*");
-    return nullableSingleResult(this.playerResultSetExtractor.extract(res));
+    const result: IPlayerDao[] = await db<IPlayerDao>("players").insert(playerData, "*");
+    return nullableSingleResult(this.playerResultSetExtractor.extract(result));
   }
 
   async getPlayerUnits(): Promise<IPlayerUnits[]> {
-    const res: IPlayerUnitsDao[] = await db<IPlayerUnitsDao>("player_units").select("*");
-    return this.playerUnitsResultSetExtractor.extract(res);
+    const result: IPlayerUnitsDao[] = await db<IPlayerUnitsDao>("player_units").select("*");
+    return this.playerUnitsResultSetExtractor.extract(result);
   }
 
   async updatePlayer(player: IPlayer): Promise<void> {
@@ -88,14 +100,14 @@ class PlayerService {
   }
 
   async getAllPlayersNotInTeam(): Promise<IPlayer[]> {
-    const res: IPlayerDao[] = await db<IPlayerDao>({ p: "players" }).select("p.*").whereNull("p.team_id");
-    return this.playerResultSetExtractor.extract(res);
+    const result: IPlayerDao[] = await db<IPlayerDao>({ p: "players" }).select("p.*").whereNull("p.team_id");
+    return this.playerResultSetExtractor.extract(result);
   }
 
   async isTeamFull(teamId: number, transaction?: Knex.Transaction): Promise<boolean> {
     const sql = "SELECT count(*) AS team_count FROM players WHERE team_id = ?";
-    const res = await (transaction ? transaction : db).raw(sql, teamId);
-    return res.rows[0]["team_count"] >= 6;
+    const result = await (transaction ? transaction : db).raw(sql, teamId);
+    return result.rows[0]["team_count"] >= 6;
   }
 
   async unassignFromTeam(playerId: number): Promise<void> {
@@ -105,11 +117,11 @@ class PlayerService {
   }
 
   async getCurrentPlayer(username: string): Promise<IPlayer> {
-    const res: IPlayerDao[] = await db<IPlayerDao>({ p: "players" })
+    const result: IPlayerDao[] = await db<IPlayerDao>({ p: "players" })
       .leftJoin<ITeamDao>({ t: "teams" }, "p.team_id", "=", "t.team_id")
       .select("p.*", { team_name: "t.name" })
       .where("p.username", "=", username);
-    return nullableSingleResult(this.playerResultSetExtractor.extract(res));
+    return nullableSingleResult(this.playerResultSetExtractor.extract(result));
   }
 
   async assignToTeam(playerIds: number[] = [], teamId: number): Promise<void> {
@@ -121,8 +133,8 @@ class PlayerService {
 
       const sql =
         "UPDATE players SET team_id = :teamId, updated_at = now() WHERE player_id = ANY (:playerIds::bigint[])";
-      const res = await trxn.raw(sql, { teamId, playerIds });
-      if (res.rowCount !== playerIds.length) {
+      const result = await trxn.raw(sql, { teamId, playerIds });
+      if (result.rowCount !== playerIds.length) {
         throw new IllegalArgumentError("Some of the players in input does not exist!");
       }
     });
@@ -136,16 +148,16 @@ class PlayerService {
       }
       const sql =
         "UPDATE players SET team_id = :toTeamId, updated_at = now() WHERE player_id = :playerId and team_id = :fromTeamId";
-      const res = await trxn.raw(sql, { toTeamId, playerId, fromTeamId });
-      if (res.rowCount < 1) {
+      const result = await trxn.raw(sql, { toTeamId, playerId, fromTeamId });
+      if (result.rowCount < 1) {
         throw new IllegalArgumentError("Player not in team");
       }
     });
   }
 
   async createPlayerUnit(payload: IPlayerUnits): Promise<IPlayerUnits> {
-    const res = await db<IPlayerUnitsDao>("player_units").insert({ name: payload.name, value: payload.value }, "*");
-    return nullableSingleResult(this.playerUnitsResultSetExtractor.extract(res));
+    const result = await db<IPlayerUnitsDao>("player_units").insert({ name: payload.name, value: payload.value }, "*");
+    return nullableSingleResult(this.playerUnitsResultSetExtractor.extract(result));
   }
 
   async updatePlayerUnit(payload: IPlayerUnits): Promise<void> {
@@ -165,8 +177,8 @@ class PlayerService {
   }
 
   async verifyAndGetCoach(username: string): Promise<IPlayer> {
-    const res = await db<IPlayerDao>("players").select("*").where("username", "=", username);
-    const coach = nullableSingleResult(this.playerResultSetExtractor.extract(res));
+    const result = await db<IPlayerDao>("players").select("*").where("username", "=", username);
+    const coach = nullableSingleResult(this.playerResultSetExtractor.extract(result));
 
     if (!coach || coach.playerType !== "COACH") {
       throw new IllegalArgumentError(`${username} is not a coach`);

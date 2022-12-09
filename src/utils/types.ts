@@ -1,4 +1,10 @@
 import { Request } from "express";
+import { IPaginateParams, IPagination } from "knex-paginate";
+
+export interface IPagedResult<T> {
+  data: T;
+  pagination: IPagination<IPaginateParams>;
+}
 
 export interface IAudit {
   createdAt: Date;
