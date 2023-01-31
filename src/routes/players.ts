@@ -1,10 +1,16 @@
-import { Request, Response, Router } from "express";
-import logger from "../logger";
-import PlayerService from "../services/player-service";
-import { AuthenticationError, IllegalArgumentError, InvalidStateError } from "../utils/error-utils";
-import { parsePaginationInput } from "../utils/request-utils";
-import { toError } from "../utils/response-utils";
-import { IAssignPlayerPayload, IAuthenticableRequest, IPlayer } from "../utils/types";
+import { Router } from "express";
+import {
+  assignToTeam,
+  createPlayer,
+  deletePlayer,
+  fetchPlayerUnitsMetadata,
+  getAllPlayers,
+  getAllPlayersInTeam,
+  getPlayer,
+  transferToTeam,
+  unassignFromTeam,
+  updatePlayer,
+} from "../controllers/players-controller";
 import {
   adminAuthorize,
   commonAuthorize,
@@ -12,151 +18,21 @@ import {
   requestBodyValidator,
   samePlayerAuthorize,
   sameTeamAuthorize,
-} from "./authorization";
+} from "./authorization-middleware";
 
-const playerService = new PlayerService();
 const playerRouter = Router();
 const baseUrl = "/v1/vtms/api";
+const playersUrl = `${baseUrl}/players`;
 
-const fetchPlayerUnitsMetadata = async (_req: Request, res: Response) => {
-  try {
-    const playerUnits = await playerService.getPlayerUnits();
-    res.json({ status: "success", data: playerUnits });
-  } catch (e) {
-    logger.error(e);
-    res.status(500).json(toError(e));
-  }
-};
-
-const createPlayer = async (req: IAuthenticableRequest, res: Response) => {
-  try {
-    const player = await playerService.createPlayer(req.body as Partial<IPlayer>);
-    res.status(201).json({ status: "success", data: player });
-  } catch (e) {
-    logger.error(e);
-    if (e instanceof AuthenticationError) {
-      const { errorCode } = e as AuthenticationError;
-      res.status(400).json(toError(e, errorCode, e.message));
-      return;
-    }
-    res.status(500).json(toError(e));
-  }
-};
-
-const getAllPlayers = async (req: Request, res: Response) => {
-  try {
-    const { page, count } = parsePaginationInput(req);
-    const type = req.query["type"] as string;
-
-    const result = await playerService.getAllPlayers(type?.toUpperCase(), page, count);
-    res.json({ status: "success", data: { players: result.data, pagination: result.pagination } });
-  } catch (e) {
-    logger.error(e);
-    res.status(500).json(toError(e));
-  }
-};
-
-const getPlayer = async (req: Request, res: Response) => {
-  try {
-    const playerId = req.params["playerId"];
-    const player = await playerService.getPlayer(parseInt(playerId));
-    if (!player) {
-      res.status(404).json({ status: "failed", message: "Player not found" });
-      return;
-    }
-    res.json({ status: "success", data: player });
-  } catch (e) {
-    logger.error(e);
-    res.status(500).json(toError(e));
-  }
-};
-
-const getAllPlayersInTeam = async (req: Request, res: Response) => {
-  try {
-    const teamId = req.params["teamId"];
-    const players = await playerService.getAllPlayersInTeam(parseInt(teamId));
-    res.json({ status: "success", data: players });
-  } catch (e) {
-    logger.error(e);
-    res.status(500).json(toError(e));
-  }
-};
-
-const updatePlayer = async (req: Request, res: Response) => {
-  try {
-    await playerService.updatePlayer(req.body as IPlayer);
-    res.status(204).end();
-  } catch (e) {
-    logger.error(e);
-    res.status(500).json(toError(e));
-  }
-};
-
-const deletePlayer = async (req: Request, res: Response) => {
-  try {
-    const playerId = req.params["playerId"];
-    await playerService.deletePlayer(parseInt(playerId));
-    res.status(204).end();
-  } catch (e) {
-    logger.error(e);
-    if (e instanceof InvalidStateError) {
-      res.status(400).json(toError(e as InvalidStateError, "ACC_PLAYER_400"));
-      return;
-    }
-    res.status(500).json(toError(e));
-  }
-};
-
-const assignToTeam = async (req: Request, res: Response) => {
-  try {
-    const { playerIds, teamId } = req.body as IAssignPlayerPayload;
-    await playerService.assignToTeam(playerIds, teamId);
-    res.status(204).end();
-  } catch (e) {
-    logger.error(e);
-    if (e instanceof IllegalArgumentError) {
-      res.status(400).json(toError(e as IllegalArgumentError, "ACC_PLAYER_400", "Unable to assign players to a team"));
-      return;
-    }
-    res.status(500).json(toError(e));
-  }
-};
-
-const unassignFromTeam = async (req: Request, res: Response) => {
-  try {
-    const playerId = req.params["playerId"];
-    await playerService.unassignFromTeam(parseInt(playerId));
-    res.status(204).end();
-  } catch (e) {
-    logger.error(e);
-    res.status(500).json(toError(e, "ERR_500", "Unable to remove player from the team."));
-  }
-};
-
-const transferToTeam = async (req: Request, res: Response) => {
-  try {
-    const { fromTeamId, toTeamId, playerId } = req.body;
-    await playerService.transferToTeam(fromTeamId, toTeamId, playerId);
-    res.status(204).end();
-  } catch (e) {
-    logger.error(e);
-    if (e instanceof IllegalArgumentError) {
-      res.status(400).json(toError(e, "ACC_PLAYER_400"));
-      return;
-    }
-    res.status(500).json(toError(e));
-  }
-};
-
-playerRouter.post(`${baseUrl}/players`, requestBodyValidator, adminAuthorize, createPlayer);
-playerRouter.get(`${baseUrl}/players/metadata`, commonAuthorize, fetchPlayerUnitsMetadata);
-playerRouter.get(`${baseUrl}/players/teams/:teamId`, commonAuthorize, sameTeamAuthorize, getAllPlayersInTeam);
-playerRouter.get(`${baseUrl}/players/:playerId`, commonAuthorize, currentPlayerTeamAuthorize, getPlayer);
-playerRouter.get(`${baseUrl}/players`, adminAuthorize, getAllPlayers);
-playerRouter.put(`${baseUrl}/players`, commonAuthorize, samePlayerAuthorize, updatePlayer);
-playerRouter.patch(`${baseUrl}/players/unassign/:playerId`, adminAuthorize, unassignFromTeam);
-playerRouter.patch(`${baseUrl}/players/assign`, requestBodyValidator, adminAuthorize, assignToTeam);
-playerRouter.patch(`${baseUrl}/players/transfer`, requestBodyValidator, adminAuthorize, transferToTeam);
-playerRouter.delete(`${baseUrl}/players/:playerId`, adminAuthorize, deletePlayer);
+playerRouter.post(playersUrl, requestBodyValidator, adminAuthorize, createPlayer);
+playerRouter.get(`${playersUrl}/metadata`, commonAuthorize, fetchPlayerUnitsMetadata);
+playerRouter.get(`${playersUrl}/teams/:teamId`, commonAuthorize, sameTeamAuthorize, getAllPlayersInTeam);
+playerRouter.get(`${playersUrl}/:playerId`, commonAuthorize, currentPlayerTeamAuthorize, getPlayer);
+playerRouter.get(playersUrl, adminAuthorize, getAllPlayers);
+playerRouter.put(playersUrl, commonAuthorize, samePlayerAuthorize, updatePlayer);
+playerRouter.patch(`${playersUrl}/unassign/:playerId`, adminAuthorize, unassignFromTeam);
+playerRouter.patch(`${playersUrl}/assign`, requestBodyValidator, adminAuthorize, assignToTeam);
+playerRouter.patch(`${playersUrl}/transfer`, requestBodyValidator, adminAuthorize, transferToTeam);
+playerRouter.delete(`${playersUrl}/:playerId`, adminAuthorize, deletePlayer);
 
 export default playerRouter;
